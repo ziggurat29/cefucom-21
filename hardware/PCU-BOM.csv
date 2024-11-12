@@ -1,0 +1,46 @@
+Marking,Part,Description,Function
+,,,
+IC01,MB418,???wut???,
+IC02,74LS243,"quad bus transceiver, non-inverting outputs",
+IC03,74LS74,"dual D positive edge triggered flip-flop, asynchronous preset and clear",
+IC04,8255,PPI,
+IC05,74LS00,quad 2-input NAND gate,
+IC06,74LS367,"hex buffer, non-inverting outputs",
+IC07,74HC04,hex inverter gate,
+IC08,74LS32,quad 2-input OR gate,
+IC09,74LS32,quad 2-input OR gate,
+IC10,74LS74,"dual D positive edge triggered flip-flop, asynchronous preset and clear",
+IC11,74HC32,quad 2-input OR gate,
+IC12,8255,PPI,
+IC13,74LS245,"octal bus transceiver, non-inverting outputs",
+IC14,74LS138,"3-to-8 line decoder/demultiplexer, inverting outputs",addr decode?
+IC15,74LS245,"octal bus transceiver, non-inverting outputs",
+IC16,74LS138,"3-to-8 line decoder/demultiplexer, inverting outputs",addr decode?
+IC17,74LS245,"octal bus transceiver, non-inverting outputs",
+IC18,74LS138,"3-to-8 line decoder/demultiplexer, inverting outputs",addr decode?
+IC19,6116,2 KiB RAM,
+IC20,6116,2 KiB RAM,
+IC21,8255,PPI,
+IC22,RPC501,RTC,
+IC23,2764,8 KiB EPROM,5-1
+IC24,2764,8 KiB EPROM,6-0
+IC25,2764,8 KiB EPROM,7-0
+IC26,2764,8 KiB EPROM,8-2
+IC27,CTC,,
+IC28,CTC,,
+IC29,4116,16Kx1 DRAM,dram
+IC30,4116,16Kx1 DRAM,dram
+IC31,4116,16Kx1 DRAM,dram
+IC32,4116,16Kx1 DRAM,dram
+IC33,4116,16Kx1 DRAM,dram
+IC34,4116,16Kx1 DRAM,dram
+IC35,4116,16Kx1 DRAM,dram
+IC36,4116,16Kx1 DRAM,dram
+IC37,Z80A,,CPU
+IC38,PIO,,Interboard Communications
+IC39,74LS157,"quad 2-line to 1-line data selector/multiplexer, non-inverting outputs",dram support
+IC40,74LS08,quad 2-input AND gate,dram support
+IC41,SN75189,RS-232 — Quadruple Line Receiver,serial
+IC42,SN75188,RS-232 — Quadruple Line Driver,serial
+IC43,74LS157,"quad 2-line to 1-line data selector/multiplexer, non-inverting outputs",dram support
+IC44,74LS32,quad 2-input OR gate,dram support
