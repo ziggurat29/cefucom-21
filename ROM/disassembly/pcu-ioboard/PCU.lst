@@ -14,13 +14,13 @@
 0008         ; XXX process block @ IX
 0008         ; Attributes: thunk
 0008         rst8_8:
-0008 C3 67 41        jp      impl_rst8_4167      ; XXX process block @ IX
+0008 C3 67 41        jp      impl_rst8_4167      ; process VM op block @ IX
 0008         ; End of function rst8_8
 000B FF FF FF FF+    db [ 5 ], 0FFh
 0010         ; =============== S U B R O U T I N E =======================================
 0010         ; Attributes: thunk
 0010         rst10_10:
-0010 C3 23 41        jp      impl_rst10_4123         ; XXX process block sequence through rst 8
+0010 C3 23 41        jp      impl_rst10_4123         ; run VM program
 0010         ; End of function rst10_10
 0013 FF FF FF FF+    db [ 5 ], 0FFh
 0018         ; =============== S U B R O U T I N E =======================================
@@ -35,7 +35,7 @@
 0018         rst18_18:
 0018 18 76       jr      impl_rst18_90       ; XXX dispatch 009e via A
 0018         ; End of function rst18_18
-001A FF FF FF FF+    db [ 6 ], 0FFh
+001A FF FF FF FF+byte_1A:db [ 6 ], 0FFh
 0020 FF FF FF FF+rst20_20:db [ 10h ], 0FFh
 0030 FF FF FF FF+rst30_30:db [ 8 ], 0FFh
 0038         ; =============== S U B R O U T I N E =======================================
@@ -3163,35 +3163,36 @@
 13EE 3A 02 E1        ld      a, (unk_E102)
 13F1 FE 05       cp      5
 13F3 20 05       jr      nz, loc_13FA
-13F5 21 0D 14        ld      hl, unk_140D
+13F5 21 0D 14        ld      hl, byte_140D
 13F8 18 0C       jr      loc_1406
 13FA         loc_13FA:
 13FA FE 03       cp      3
 13FC 20 05       jr      nz, loc_1403
-13FE 21 10 14        ld      hl, unk_1410
+13FE 21 10 14        ld      hl, byte_1410
 1401 18 03       jr      loc_1406
 1403         loc_1403:
-1403 21 13 14        ld      hl, unk_1413        ; XXX processed by rst10
+1403 21 13 14        ld      hl, byte_1413       ; XXX processed by rst10
 1406         loc_1406:
-1406 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+1406 CD 23 41        call    impl_rst10_4123         ; run VM program
 1409         loc_1409:
 1409 2A 20 E2        ld      hl, (unk_E220)
 140C E9          jp      (hl)
 140C         ; End of function sub_13E4
-140D 63      unk_140D:db  63h ; c            ; ...
-140E 06          db    6
-140F 00          db    0
-1410 63      unk_1410:db  63h ; c            ; ...
-1411 09          db    9
-1412 00          db    0
-1413 62      unk_1413:db  62h ; b            ; ...
-1413                             ; XXX processed by rst10
-1414 19          db  19h
-1415 14          db  14h
-1416 05          db    5
-1417 00          db    0
-1418 00          db    0
-1419 FF          db 0FFh
+140D 63      byte_140D:db 63h            ; ...
+140D                             ; vmop63_4AAA
+140E 06          db 6
+140F 00          db 0                ; vmop00_end_419E
+1410 63      byte_1410:db 63h            ; ...
+1410                             ; vmop63_4AAA
+1411 09          db 9
+1412 00          db 0                ; vmop00_end_419E
+1413 62      byte_1413:db 62h            ; ...
+1413                             ; vmop62_4A7A
+1414 19 14       dw byte_1419            ; XXX 5 NOP hole
+1416 05 00       dw 5
+1418 00          db 0                ; vmop00_end_419E
+1419 FF      byte_1419:db 0FFh           ; ...
+1419                             ; XXX 5 NOP hole
 141A FF          db 0FFh
 141B FF          db 0FFh
 141C FF          db 0FFh
@@ -4427,7 +4428,7 @@
 1C39 23          inc     hl
 1C3A 5E          ld      e, (hl)
 1C3B EB          ex      de, hl
-1C3C CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+1C3C CD 23 41        call    impl_rst10_4123         ; run VM program
 1C3C         ; End of function sub_1C02
 1C3F         ; =============== S U B R O U T I N E =======================================
 1C3F         nullsub_24:
@@ -4532,7 +4533,7 @@
 1CBF B4          or      h
 1CC0 B5          or      l
 1CC1 C8          ret     z               ; leave if no program
-1CC2 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+1CC2 CD 23 41        call    impl_rst10_4123         ; run VM program
 1CC5 C9          ret
 1CC5         ; End of function sub_1CBB
 1CC6         ; =============== S U B R O U T I N E =======================================
@@ -4543,7 +4544,7 @@
 1CCA B4          or      h
 1CCB B5          or      l
 1CCC 28 03       jr      z, loc_1CD1
-1CCE CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+1CCE CD 23 41        call    impl_rst10_4123         ; run VM program
 1CD1         loc_1CD1:
 1CD1 CD 53 1C        call    sub_1C53
 1CD4 B7          or      a
@@ -4600,7 +4601,7 @@
 1D17 B4          or      h
 1D18 B5          or      l
 1D19 28 03       jr      z, loc_1D1E
-1D1B CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+1D1B CD 23 41        call    impl_rst10_4123         ; run VM program
 1D1E         loc_1D1E:
 1D1E CD 53 1C        call    sub_1C53
 1D21 B7          or      a
@@ -4971,7 +4972,7 @@
 1F10 B4          or      h
 1F11 B5          or      l
 1F12 28 03       jr      z, loc_1F17
-1F14 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+1F14 CD 23 41        call    impl_rst10_4123         ; run VM program
 1F17         loc_1F17:
 1F17 AF          xor     a
 1F18 32 40 C3        ld      (byte_C340), a
@@ -5016,8 +5017,8 @@
 1F47 36 01       ld      (hl), 1
 1F49 23          inc     hl
 1F4A 77          ld      (hl), a
-1F4B 21 EA 1F        ld      hl, byte_1FEA       ; XXX dispatch code? (processed by RST 10?)
-1F4E CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+1F4B 21 EA 1F        ld      hl, byte_1FEA       ; XXX a rst 10 program
+1F4E CD 23 41        call    impl_rst10_4123         ; run VM program
 1F51 E1          pop     hl
 1F52 D1          pop     de
 1F53 C9          ret
@@ -5032,8 +5033,8 @@
 1F5C 73          ld      (hl), e
 1F5D 23          inc     hl
 1F5E 36 43       ld      (hl), 43h ; 'C'
-1F60 21 F0 1F        ld      hl, byte_1FF0       ; XXX dispatch code? (processed by RST 10?)
-1F63 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+1F60 21 F0 1F        ld      hl, byte_1FF0       ; XXX a rst 10 program
+1F63 CD 23 41        call    impl_rst10_4123         ; run VM program
 1F66 C9          ret
 1F66         ; End of function sub_1F54
 1F67         ; =============== S U B R O U T I N E =======================================
@@ -5127,15 +5128,15 @@
 1FE6 A2 1E       dw sub_1EA2
 1FE8 C6 1E       dw sub_1EC6
 1FEA 62      byte_1FEA:db 62h            ; ...
-1FEA                             ; XXX dispatch code? (processed by RST 10?)
-1FEB 80 C3       dw 0C380h
+1FEA                             ; vmop62_4A7A
+1FEB 80 C3       dw unk_C380
 1FED 07 00       dw 7
 1FEF 00          db 0
 1FF0 62      byte_1FF0:db 62h            ; ...
-1FF0                             ; XXX dispatch code? (processed by RST 10?)
-1FF1 88 C3       dw 0C388h               ; XXX param1?
-1FF3 04 00       dw 4                ; XXX param2?
-1FF5 00          db 0                ; XXX payload?
+1FF0                             ; vmop62_4A7A
+1FF1 88 C3       dw unk_C388
+1FF3 04 00       dw 4
+1FF5 00          db 0                ; vmop00_end_419E
 1FF6         ; =============== S U B R O U T I N E =======================================
 1FF6         ; (does nothing)
 1FF6         nullisr_1FF6:
@@ -5239,7 +5240,6 @@
 2081 FE 00       cp      0
 2083 C0          ret     nz
 2084 3E 03       ld      a, 3
-2086         loc_2086:
 2086 32 1C C4        ld      (byte_C41C), a      ; XXX indexes second level dbldisp_ 2200
 2089 3E 01       ld      a, 1
 208B 32 49 C4        ld      (byte_C449), a
@@ -10006,142 +10006,142 @@
 3F00 00 00 00 00+    db [ 100h ], 0
 4000 01          db    1                 ; XXX this shows up here and there
 4001 05          db    5
-4002 9E 41   dispatch_4002:dw fxn00_nop_419E     ; ...
-4002                             ; XXX 00(0): NOP
-4004 A7 41       dw fxn01_41A7           ; XXX 01(4): 'assign'; *(uint16be_t*)param1 = *(uint16be_t*)param2
-4006 AE 41       dw fxn02_41AE           ; XXX 02(4): 'assign'; *(uint8_t*)param1 = *(uint8_t*)param2
-4008 B1 41       dw fxn03_41B1           ; XXX 03(4): 'assign'; *(uint16be_t*)param1 = param2
-400A B5 41       dw fxn04_41B5           ; XXX 04(4): 'assign'; *(uint8_t*)param1 = param2.l
-400C B7 41       dw fxn05_41B7           ; XXX 05(5): 'memcpy'; memcpy ( param1, param2, (param3 || 256) )
-400E D1 41       dw fxn06_41D1           ; XXX 06(5): 'revmemcpy'; revmemcpy ( param1, param2, (param3 || 256) )
-4010 EB 41       dw fxn07_41EB           ; XXX 07(4): 'memset'; memset ( param1, param2.h, (param2.l || 256) ) (*,v,c)
-4012 F2 41       dw fxn08_41F2           ; XXX 08(6): 'memcpy'; memcpy ( param1, param2, (param3 || 65536) ) (*d,*s,c)
-4014 02 42       dw fxn09_4202           ; XXX 09(4): 'assign'; *(uint16be_t*)param1) = * *(uint16be_t**)param2)
-4016 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-4018 10 42       dw fxn0b_4210           ; XXX 0b(4): 'accum'; *(uint16be_t*)param1) += *(uint16be_t*)param2)
-401A 25 42       dw fxn0c_4225           ; XXX 0c(4): B = *(uint8_t*)param1 += *(uint8_t*)param2; flags C
-401C 2E 42       dw fxn0d_422E           ; XXX 0d(4): *(uint16be_t*)param1 += param2; flags C
-401E 3F 42       dw fxn0e_423F           ; XXX 0e(4): B = *(uint8_t*)param1 += param2.l; flags C
-4020 47 42       dw fxn0f_4247           ; XXX 0f(4): *(uint16be_t*)param1) -= *(uint16be_t*)param2)
-4022 5E 42       dw fxn10_425E           ; XXX 10(4): B = *(uint8_t*)param1 -= *(uint8_t*)param2; flags C
-4024 68 42       dw fxn11_4268           ; XXX 11(4): *(uint16be_t*)param1) -= param2; flags C
-4026 7A 42       dw fxn12_427A           ; XXX 12(4): B = *(uint8_t*)param1 -= param2.l; flags C
-4028 82 42       dw fxn13_4282           ; XXX 13(4): DE = *(uint16be_t*)param1 - *(uint16be_t*)param2; flags C
-402A 94 42       dw fxn14_4294           ; XXX 14(4): B = *(uint8_t*)param1 -= *(uint8_t*)param2; flags C
-402C 9D 42       dw fxn15_429D           ; XXX 15(4): DE = *(uint16be_t*)param1 - param2; flags C
-402E AA 42       dw fxn16_42AA           ; XXX 16(4): B = *(uint8_t*)param1 - param2.l; flags C
-4030 B1 42       dw fxn17_42B1           ; XXX 17(5): compare multibyte; *(uint8_t*)param1 - *(uint8_t*)param2, for param3.l; flags C
-4032 CC 42       dw fxn18_42CC           ; XXX 18(4): DE = *(uint16be_t*)param1 & *(uint16be_t*)param2
-4034 DC 42       dw fxn19_42DC           ; XXX 19(4): B = *(uint8_t*)param1 & *(uint8_t*)param2
-4036 E4 42       dw fxn1a_42E4           ; XXX 1a(4): DE = *(uint8_t*)param1 & param2, flags C
-4038 EF 42       dw fxn1b_42EF           ; XXX 1b(4): B = *(uint8_t*)param1 & param2.l, flags C
-403A 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-403C 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-403E 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-4040 F6 42       dw fxn1f_42F6           ; XXX 1f(4): *(uint16_t*)param1 |= *(uint16_t*)param2
-4042 FF 42       dw fxn20_42FF           ; XXX 20(4): *(uint8_t*)param1 |= *(uint8_t*)param2
-4044 03 43       dw fxn21_4303           ; XXX 21(4): *(uint8_t*)param1 |= param2.h
-4046 07 43       dw fxn22_4307           ; XXX 22(4): *(uint8_t*)param1 |= param2.l
-4048 0B 43       dw fxn23_430B           ; XXX 23(4): *(uint16_t*)param1 &= *(uint16_t*)param2
-404A 14 43       dw fxn24_4314           ; XXX 24(4): *(uint8_t*)param1 &= *(uint8_t*)param2
-404C 18 43       dw fxn25_4318           ; XXX 25(4): *(uint8_t*)param1 &= param2.h
-404E 1C 43       dw fxn26_431C           ; XXX 26(4): *(uint8_t*)param1 &= param2.l
-4050 20 43       dw fxn27_4320           ; XXX 27(4): *(uint16_t*)param1 ^= *(uint16_t*)param2
-4052 29 43       dw fxn28_4329           ; XXX 28(4): *(uint8_t*)param1 ^= *(uint8_t*)param2
-4054 2D 43       dw fxn29_432D           ; XXX 29(4): *(uint8_t*)param1 ^= param2.h
-4056 31 43       dw fxn2a_4331           ; XXX 2a(4): *(uint8_t*)param1 ^= param2.l
-4058 35 43       dw fxn2b_4335           ; XXX 2b(4): *(uint16be_t*)param1 >>= param2.l
-405A 45 43       dw fxn2c_4345           ; XXX 2c(4): *(uint8_t*)param1 >>= param2.l
-405C 4D 43       dw fxn2d_434D           ; XXX 2d(4): *(uint16be_t*)param1 <<= param2.l
-405E 5D 43       dw fxn2e_435D           ; XXX 2e(4): *(uint8_t*)param1 <<= param2.l
-4060 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-4062 9E 41       dw fxn00_nop_419E           ; fxn30
-4064 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-4066 65 43       dw fxn32_4365           ; XXX 32(2): 'goto'; goto param1
-4068 69 43       dw fxn33_4369           ; XXX 33(2): 'if00c': if ( 0 != C ) { goto param1 }
-406A 72 43       dw fxn34_4372           ; XXX 34(2): 'nif00c': if ( 0 != C ) { goto param1 }
-406C 78 43       dw fxn35_4378           ; XXX 35(2): 'if80c': if ( C ) { goto param1 }
-406E 7F 43       dw fxn36_437F           ; XXX 36(2): 'nif80c': if ( 0x80 != C ) { goto param1 }
-4070 86 43       dw fxn37_4386           ; XXX 37(4): 'nif16p'; (! *((uint16be_t*)param2) ), goto param1
-4072 98 43       dw fxn38_4398           ; XXX 38(4): 'nifp'; (! *((uint8_t*)param2) ), goto param1
-4074 A0 43       dw fxn39_43A0           ; XXX 39(4): 'if16p'; if ( *((uint16be_t*)param2) ), goto param1
-4076 B2 43       dw fxn3a_43B2           ; XXX 3a(4): 'ifp'; if ( *((uint8_t*)param2) ) { goto param1 }
-4078 BA 43       dw fxn3b_43BA           ; XXX 3b(4): ''; if ( --(*(uint16be_t*)param2) ) { goto param1 }
-407A D3 43       dw fxn3c_43D3           ; XXX 3c(4): 'next'; if ( 0 != --*((uint8_t*)param2) ) { goto param1 }
-407C DB 43       dw fxn3d_43DB           ; XXX 3d(2): process single block (rst 8) @ param1
-407E EA 43       dw fxn3e_43EA           ; XXX 3e(2): process block sequence (rst 10) @ param1
-4080 FD 43       dw fxn3f_43FD           ; XXX 3f(2): 'usr'; invoke assembly @ param1
-4082 03 44       dw fxn40_4403           ; XXX 40(4): 'computed goto'; *(unit8_t*)param2 indexes (1-relative) into length-prefixed array of pointers @ param1; goto
-4084 1C 44       dw fxn41_441C           ; XXX 41(4): XXX run rst8 block via length-prefixed table at param1 indexed *param2 (1-relative)
-4086 3D 44       dw fxn42_443D           ; XXX 42(4): XXX run rst10 program via length-prefixed table at param1 indexed *param2 (1-relative)
-4088 F2 43       dw fxn43_43F2           ; XXX 43(2): process block sequence (rst 10) @ *(uint16be_t*)param1 (i.e. big-endian ptr)
-408A 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-408C 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-408E 77 44       dw fxn46_4477           ; XXX 46(6):
-4090 F4 44       dw fxn47_44F4           ; XXX 47(6):
-4092 89 45       dw fxn48_4589           ; XXX 48(6): some BCD stuff
-4094 68 46       dw fxn49_4668           ; XXX 49(6): some BCD stuff
-4096 16 47       dw fxn4a_4716           ; XXX 4a(4): receive multiple from port; param1 = ptr, param2.h = count, param2.l = port
-4098 1D 47       dw fxn4b_471D           ; XXX 4b(4): send multiple to port; param1 = ptr, param2.h = count, param2.l = port
-409A 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-409C 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-409E 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40A0 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40A2 9E 41       dw fxn00_nop_419E           ; fxn50
-40A4 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40A6 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40A8 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40AA 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40AC 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40AE 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40B0 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40B2 9E 41       dw fxn00_nop_419E           ; fxn58
-40B4 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40B6 03 48       dw fxn5a_4803           ; XXX 5a(4):
-40B8 7F 48       dw fxn5b_487F           ; XXX 5b(4):
-40BA AD 48       dw fxn5c_48AD           ; XXX 5c(4):
-40BC ED 48       dw fxn5d_48ED           ; XXX 5d(4):
-40BE 24 47       dw fxn5e_4724           ; XXX 5e(4):
-40C0 DD 49       dw fxn5f_49DD           ; XXX 5f(4):
-40C2 53 4A       dw fxn60_4A53           ; XXX 60(4):
-40C4 CC 4A       dw fxn61_4ACC           ; XXX 61(4):
-40C6 7A 4A       dw fxn62_4A7A           ; XXX 62(4): ??? load data reference into to a struct at c200?
-40C8 AA 4A       dw fxn63_4AAA           ; XXX 63(1): ??? run bytecode at 7803 table indexed by param1.h (1-relative)
-40CA 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40CC 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40CE 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40D0 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40D2 9E 41       dw fxn00_nop_419E           ; fxn68
-40D4 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40D6 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40D8 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40DA 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40DC 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40DE 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40E0 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40E2 9E 41       dw fxn00_nop_419E           ; fxn70
-40E4 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40E6 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40E8 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40EA 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40EC 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40EE 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40F0 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40F2 9E 41       dw fxn00_nop_419E           ; fxn78
-40F4 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40F6 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40F8 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40FA 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40FC 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-40FE 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
-4100 9E 41       dw fxn00_nop_419E           ; XXX 00(0): NOP
+4002 9E 41   dispatch_4002:dw vmop00_end_419E    ; ...
+4002                             ; vmop 00(0): END
+4004 A7 41       dw vmop01_41A7          ; vmop 01(4): 'assign'; *(uint16be_t*)param1 = *(uint16be_t*)param2
+4006 AE 41       dw vmop02_41AE          ; vmop 02(4): 'assign'; *(uint8_t*)param1 = *(uint8_t*)param2
+4008 B1 41       dw vmop03_41B1          ; vmop 03(4): 'assign'; *(uint16be_t*)param1 = param2
+400A B5 41       dw vmop04_41B5          ; vmop 04(4): 'assign'; *(uint8_t*)param1 = param2.l
+400C B7 41       dw vmop05_41B7          ; vmop 05(5): 'memcpy'; memcpy ( param1, param2, (param3 || 256) )
+400E D1 41       dw vmop06_41D1          ; vmop 06(5): 'revmemcpy'; revmemcpy ( param1, param2, (param3 || 256) )
+4010 EB 41       dw vmop07_41EB          ; vmop 07(4): 'memset'; memset ( param1, param2.h, (param2.l || 256) ) (*,v,c)
+4012 F2 41       dw vmop08_41F2          ; vmop 08(6): 'memcpy'; memcpy ( param1, param2, (param3 || 65536) ) (*d,*s,c)
+4014 02 42       dw vmop09_4202          ; vmop 09(4): 'assign'; *(uint16be_t*)param1) = * *(uint16be_t**)param2)
+4016 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+4018 10 42       dw vmop0b_4210          ; vmop 0b(4): 'accum'; *(uint16be_t*)param1) += *(uint16be_t*)param2)
+401A 25 42       dw vmop0c_4225          ; vmop 0c(4): B = *(uint8_t*)param1 += *(uint8_t*)param2; flags C
+401C 2E 42       dw vmop0d_422E          ; vmop 0d(4): *(uint16be_t*)param1 += param2; flags C
+401E 3F 42       dw vmop0e_423F          ; vmop 0e(4): B = *(uint8_t*)param1 += param2.l; flags C
+4020 47 42       dw vmop0f_4247          ; vmop 0f(4): *(uint16be_t*)param1) -= *(uint16be_t*)param2)
+4022 5E 42       dw vmop10_425E          ; vmop 10(4): B = *(uint8_t*)param1 -= *(uint8_t*)param2; flags C
+4024 68 42       dw vmop11_4268          ; vmop 11(4): *(uint16be_t*)param1) -= param2; flags C
+4026 7A 42       dw vmop12_427A          ; vmop 12(4): B = *(uint8_t*)param1 -= param2.l; flags C
+4028 82 42       dw vmop13_4282          ; vmop 13(4): DE = *(uint16be_t*)param1 - *(uint16be_t*)param2; flags C
+402A 94 42       dw vmop14_4294          ; vmop 14(4): B = *(uint8_t*)param1 -= *(uint8_t*)param2; flags C
+402C 9D 42       dw vmop15_429D          ; vmop 15(4): DE = *(uint16be_t*)param1 - param2; flags C
+402E AA 42       dw vmop16_42AA          ; vmop 16(4): B = *(uint8_t*)param1 - param2.l; flags C
+4030 B1 42       dw vmop17_42B1          ; vmop 17(5): compare multibyte; *(uint8_t*)param1 - *(uint8_t*)param2, for param3.l; flags C
+4032 CC 42       dw vmop18_42CC          ; vmop 18(4): DE = *(uint16be_t*)param1 & *(uint16be_t*)param2
+4034 DC 42       dw vmop19_42DC          ; vmop 19(4): B = *(uint8_t*)param1 & *(uint8_t*)param2
+4036 E4 42       dw vmop1a_42E4          ; vmop 1a(4): DE = *(uint8_t*)param1 & param2, flags C
+4038 EF 42       dw vmop1b_42EF          ; vmop 1b(4): B = *(uint8_t*)param1 & param2.l, flags C
+403A 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+403C 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+403E 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+4040 F6 42       dw vmop1f_42F6          ; vmop 1f(4): *(uint16_t*)param1 |= *(uint16_t*)param2
+4042 FF 42       dw vmop20_42FF          ; vmop 20(4): *(uint8_t*)param1 |= *(uint8_t*)param2
+4044 03 43       dw vmop21_4303          ; vmop 21(4): *(uint8_t*)param1 |= param2.h
+4046 07 43       dw vmop22_4307          ; vmop 22(4): *(uint8_t*)param1 |= param2.l
+4048 0B 43       dw vmop23_430B          ; vmop 23(4): *(uint16_t*)param1 &= *(uint16_t*)param2
+404A 14 43       dw vmop24_4314          ; vmop 24(4): *(uint8_t*)param1 &= *(uint8_t*)param2
+404C 18 43       dw vmop25_4318          ; vmop 25(4): *(uint8_t*)param1 &= param2.h
+404E 1C 43       dw vmop26_431C          ; vmop 26(4): *(uint8_t*)param1 &= param2.l
+4050 20 43       dw vmop27_4320          ; vmop 27(4): *(uint16_t*)param1 ^= *(uint16_t*)param2
+4052 29 43       dw vmop28_4329          ; vmop 28(4): *(uint8_t*)param1 ^= *(uint8_t*)param2
+4054 2D 43       dw vmop29_432D          ; vmop 29(4): *(uint8_t*)param1 ^= param2.h
+4056 31 43       dw vmop2a_4331          ; vmop 2a(4): *(uint8_t*)param1 ^= param2.l
+4058 35 43       dw vmop2b_4335          ; vmop 2b(4): *(uint16be_t*)param1 >>= param2.l
+405A 45 43       dw vmop2c_4345          ; vmop 2c(4): *(uint8_t*)param1 >>= param2.l
+405C 4D 43       dw vmop2d_434D          ; vmop 2d(4): *(uint16be_t*)param1 <<= param2.l
+405E 5D 43       dw vmop2e_435D          ; vmop 2e(4): *(uint8_t*)param1 <<= param2.l
+4060 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+4062 9E 41       dw vmop00_end_419E          ; vmop30
+4064 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+4066 65 43       dw vmop32_4365          ; vmop 32(2): 'goto'; goto param1
+4068 69 43       dw vmop33_4369          ; vmop 33(2): 'ifzero': if ( Z ) { goto param1 }
+406A 72 43       dw vmop34_4372          ; vmop 34(2): 'ifnonzero': if ( NZ ) { goto param1 }
+406C 78 43       dw vmop35_4378          ; vmop 35(2): 'ifcarry': if ( Cy ) { goto param1 }
+406E 7F 43       dw vmop36_437F          ; vmop 36(2): 'ifnotcarry': if ( NC ) { goto param1 }
+4070 86 43       dw vmop37_4386          ; vmop 37(4): 'nif16p'; (! *((uint16be_t*)param2) ), goto param1
+4072 98 43       dw vmop38_4398          ; vmop 38(4): 'nifp'; (! *((uint8_t*)param2) ), goto param1
+4074 A0 43       dw vmop39_43A0          ; vmop 39(4): 'if16p'; if ( *((uint16be_t*)param2) ), goto param1
+4076 B2 43       dw vmop3a_43B2          ; vmop 3a(4): 'ifp'; if ( *((uint8_t*)param2) ) { goto param1 }
+4078 BA 43       dw vmop3b_43BA          ; vmop 3b(4): ''; if ( --(*(uint16be_t*)param2) ) { goto param1 }
+407A D3 43       dw vmop3c_43D3          ; vmop 3c(4): 'next'; if ( 0 != --*((uint8_t*)param2) ) { goto param1 }
+407C DB 43       dw vmop3d_43DB          ; vmop 3d(2): process single block (rst 8) @ param1
+407E EA 43       dw vmop3e_43EA          ; vmop 3e(2): 'run'; execute (rst 10) @ param1
+4080 FD 43       dw vmop3f_43FD          ; vmop 3f(2): 'usr'; invoke assembly @ param1
+4082 03 44       dw vmop40_4403          ; vmop 40(4): 'computed goto'; *(unit8_t*)param2 indexes (1-relative) into length-prefixed array of pointers @ param1; goto
+4084 1C 44       dw vmop41_441C          ; vmop 41(4): XXX run rst8 block via length-prefixed table at param1 indexed *param2 (1-relative)
+4086 3D 44       dw vmop42_443D          ; vmop 42(4): XXX run rst10 program via length-prefixed table at param1 indexed *param2 (1-relative) (entries BE)
+4088 F2 43       dw vmop43_43F2          ; vmop 43(2): 'run_le'; execute (rst 10) @ param1 (LE)
+408A 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+408C 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+408E 77 44       dw vmop46_4477          ; vmop 46(6):
+4090 F4 44       dw vmop47_44F4          ; vmop 47(6):
+4092 89 45       dw vmop48_4589          ; vmop 48(6): some BCD stuff
+4094 68 46       dw vmop49_4668          ; vmop 49(6): some BCD stuff
+4096 16 47       dw vmop4a_4716          ; vmop 4a(4): receive multiple from port; param1 = ptr, param2.h = count, param2.l = port
+4098 1D 47       dw vmop4b_471D          ; vmop 4b(4): send multiple to port; param1 = ptr, param2.h = count, param2.l = port
+409A 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+409C 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+409E 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40A0 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40A2 9E 41       dw vmop00_end_419E          ; vmop50
+40A4 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40A6 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40A8 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40AA 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40AC 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40AE 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40B0 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40B2 9E 41       dw vmop00_end_419E          ; vmop58
+40B4 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40B6 03 48       dw vmop5a_4803          ; vmop 5a(4):
+40B8 7F 48       dw vmop5b_487F          ; vmop 5b(4):
+40BA AD 48       dw vmop5c_48AD          ; vmop 5c(4):
+40BC ED 48       dw vmop5d_48ED          ; vmop 5d(4):
+40BE 24 47       dw vmop5e_4724          ; vmop 5e(4):
+40C0 DD 49       dw vmop5f_49DD          ; vmop 5f(4):
+40C2 53 4A       dw vmop60_4A53          ; vmop 60(4):
+40C4 CC 4A       dw vmop61_4ACC          ; vmop 61(4):
+40C6 7A 4A       dw vmop62_4A7A          ; vmop 62(4): ??? load data reference into to a struct at c200?  note param1 and param2 are endian-reversed
+40C8 AA 4A       dw vmop63_4AAA          ; vmop 63(1): ??? run bytecode at 7803 table indexed by param1.h (1-relative); note param1 and param2 are endian-reversed
+40CA 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40CC 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40CE 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40D0 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40D2 9E 41       dw vmop00_end_419E          ; vmop68
+40D4 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40D6 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40D8 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40DA 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40DC 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40DE 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40E0 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40E2 9E 41       dw vmop00_end_419E          ; vmop70
+40E4 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40E6 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40E8 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40EA 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40EC 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40EE 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40F0 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40F2 9E 41       dw vmop00_end_419E          ; vmop78
+40F4 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40F6 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
+40F8 9E 41       dw vmop00_end_419E          ; vmop7b: 'end if Z'
+40FA 9E 41       dw vmop00_end_419E          ; vmop7c: 'end if NZ'
+40FC 9E 41       dw vmop00_end_419E          ; vmop7d: 'end if C'
+40FE 9E 41       dw vmop00_end_419E          ; vmop7e: 'end if NC'
+4100 9E 41       dw vmop00_end_419E          ; vmop7f: 'NOP'
 4102         ; =============== S U B R O U T I N E =======================================
 4102         nullsub_32:
 4102 C9          ret
 4102         ; End of function nullsub_32
 4103 00 00 00 00+    db [ 20h ], 0
 4123         ; =============== S U B R O U T I N E =======================================
-4123         ; XXX process block sequence through rst 8
+4123         ; run VM program
 4123         impl_rst10_4123:            ; ...
 4123 DD E5       push    ix
 4125 E5          push    hl
@@ -10152,21 +10152,21 @@
 412C 28 32       jr      z, leave_4160       ; fxn00 terminates block sequence
 412E FE 7B       cp      7Bh             ; 123 and above handled specially
 4130 30 05       jr      nc, bogoops_4137
-4132 CD 67 41        call    impl_rst8_4167      ; XXX process block @ IX
+4132 CD 67 41        call    impl_rst8_4167      ; process VM op block @ IX
 4135 18 F1       jr      loop_4128
 4137         bogoops_4137:
-4137 F6 80       or      80h
+4137 F6 80       or      80h             ; (this is a way of checking cases 7f-7b by incrementing and testing for zero)
 4139 3C          inc     a
-413A 28 20       jr      z, bogo7f_415C
+413A 28 20       jr      z, bogo7f_415C      ; 7F: non-terminating NOP
 413C 3C          inc     a
-413D 28 17       jr      z, bogo7e_4156      ; exit NC in C flags
+413D 28 17       jr      z, bogo7e_4156      ; 7E: exit NC in C flags
 413F 3C          inc     a
-4140 28 0E       jr      z, bogo7d_4150      ; exit Cy in C flags
+4140 28 0E       jr      z, bogo7d_4150      ; 7D: exit Cy in C flags
 4142 3C          inc     a
-4143 79          ld      a, c
-4144 28 05       jr      z, bogo7c_414B      ; exit NZ in C flags
+4143 79          ld      a, c            ; (prepping for 7B case)
+4144 28 05       jr      z, bogo7c_414B      ; 7C: exit NZ in C flags
 4146 A7          and     a
-4147 28 17       jr      z, leave_4160
+4147 28 17       jr      z, leave_4160       ; 7B: exit Z in C flags
 4149 18 11       jr      bogo7f_415C
 414B         bogo7c_414B: 
 414B A7          and     a
@@ -10191,14 +10191,14 @@
 4166 C9          ret
 4166         ; End of function impl_rst10_4123
 4167         ; =============== S U B R O U T I N E =======================================
-4167         ; XXX process block @ IX
+4167         ; process VM op block @ IX
 4167         ;
-4167         ; fxncode 8-bit
-4167         ; param1 16-bit; HL, usually a pointer
-4167         ; param2 16-bit; DE, usually a length
-4167         ; payload...; IX
+4167         ; vmop   8-bit
+4167         ; param1 uint16be_t; HL
+4167         ; param2 uint16be_t; DE
+4167         ; ... sometimes more (sometimes less!)
 4167         ;
-4167         ; The fxncode dispatches via 4002
+4167         ; The vmop dispatches via 4002
 4167         impl_rst8_4167:             ; ...
 4167 21 02 40        ld      hl, dispatch_4002
 416A DD 7E 00        ld      a, (ix+0)           ; function code (index into table)
@@ -10215,9 +10215,9 @@
 4179 E5          push    hl              ; address to dispatch; pushed to make 'ret' a 'jp'
 417A 11 05 00        ld      de, 5           ; optimistically load param1 and param2.  They might not be valid, though, depending on fxn code (handlers will balance for that).
 417D DD 19       add     ix, de          ; advance IX past parameters HL and DE
-417F DD 5E FF        ld      e, (ix+0FFh)        ; (-1) note uint16le_t
+417F DD 5E FF        ld      e, (ix+0FFh)        ; (-1) note uint16be_t
 4182 DD 56 FE        ld      d, (ix+0FEh)        ; (-2)
-4185 DD 6E FD        ld      l, (ix+0FDh)        ; (-3) note uint16le_t
+4185 DD 6E FD        ld      l, (ix+0FDh)        ; (-3) note uint16be_t
 4188 DD 66 FC        ld      h, (ix+0FCh)        ; (-4)
 418B C9          ret                 ; really a jump to the dispatched function
 418B         ; End of function impl_rst8_4167
@@ -10240,17 +10240,17 @@
 419D C9          ret                 ; really a jump to the dispatched function
 419D         ; End of function sub_418C
 419E         ; =============== S U B R O U T I N E =======================================
-419E         ; XXX 00(0): NOP
-419E         fxn00_nop_419E:             ; ...
+419E         ; vmop 00(0): END
+419E         vmop00_end_419E:            ; ...
 419E DD 2B       dec     ix              ; back up block pointer to just after (undefined) function code; presumably another block
 41A0 DD 2B       dec     ix
 41A2 DD 2B       dec     ix
 41A4 DD 2B       dec     ix
 41A6 C9          ret
-41A6         ; End of function fxn00_nop_419E
+41A6         ; End of function vmop00_end_419E
 41A7         ; =============== S U B R O U T I N E =======================================
-41A7         ; XXX 01(4): 'assign'; *(uint16be_t*)param1 = *(uint16be_t*)param2
-41A7         fxn01_41A7:
+41A7         ; vmop 01(4): 'assign'; *(uint16be_t*)param1 = *(uint16be_t*)param2
+41A7         vmop01_41A7: 
 41A7 1A          ld      a, (de)
 41A8 77          ld      (hl), a
 41A9 23          inc     hl
@@ -10258,36 +10258,36 @@
 41AB 1A          ld      a, (de)
 41AC 77          ld      (hl), a
 41AD C9          ret
-41AD         ; End of function fxn01_41A7
+41AD         ; End of function vmop01_41A7
 41AE         ; =============== S U B R O U T I N E =======================================
-41AE         ; XXX 02(4): 'assign'; *(uint8_t*)param1 = *(uint8_t*)param2
-41AE         fxn02_41AE:
+41AE         ; vmop 02(4): 'assign'; *(uint8_t*)param1 = *(uint8_t*)param2
+41AE         vmop02_41AE: 
 41AE 1A          ld      a, (de)
 41AF 77          ld      (hl), a
 41B0 C9          ret
-41B0         ; End of function fxn02_41AE
+41B0         ; End of function vmop02_41AE
 41B1         ; =============== S U B R O U T I N E =======================================
-41B1         ; XXX 03(4): 'assign'; *(uint16be_t*)param1 = param2
-41B1         fxn03_41B1:
+41B1         ; vmop 03(4): 'assign'; *(uint16be_t*)param1 = param2
+41B1         vmop03_41B1: 
 41B1 72          ld      (hl), d
 41B2 23          inc     hl
 41B3 73          ld      (hl), e
 41B4 C9          ret
-41B4         ; End of function fxn03_41B1
+41B4         ; End of function vmop03_41B1
 41B5         ; =============== S U B R O U T I N E =======================================
-41B5         ; XXX 04(4): 'assign'; *(uint8_t*)param1 = param2.l
-41B5         fxn04_41B5:
+41B5         ; vmop 04(4): 'assign'; *(uint8_t*)param1 = param2.l
+41B5         vmop04_41B5: 
 41B5 73          ld      (hl), e
 41B6 C9          ret
-41B6         ; End of function fxn04_41B5
+41B6         ; End of function vmop04_41B5
 41B7         ; =============== S U B R O U T I N E =======================================
-41B7         ; XXX 05(5): 'memcpy'; memcpy ( param1, param2, (param3 || 256) )
-41B7         fxn05_41B7:
+41B7         ; vmop 05(5): 'memcpy'; memcpy ( param1, param2, (param3 || 256) )
+41B7         vmop05_41B7: 
 41B7 DD 7E 00        ld      a, (ix+0)
 41BA FE 00       cp      0
 41BC 28 0E       jr      z, add256_41CC      ; 0 means 256
 41BE 06 00       ld      b, 0
-41C0         loc_41C0:
+41C0         loop_41C0:              ; ...
 41C0 C5          push    bc
 41C1 DD 4E 00        ld      c, (ix+0)
 41C4 DD 23       inc     ix
@@ -10297,13 +10297,13 @@
 41CA 18 04       jr      leave_41D0
 41CC         add256_41CC: 
 41CC 06 01       ld      b, 1
-41CE 18 F0       jr      loc_41C0
+41CE 18 F0       jr      loop_41C0
 41D0         leave_41D0:
 41D0 C9          ret
-41D0         ; End of function fxn05_41B7
+41D0         ; End of function vmop05_41B7
 41D1         ; =============== S U B R O U T I N E =======================================
-41D1         ; XXX 06(5): 'revmemcpy'; revmemcpy ( param1, param2, (param3 || 256) )
-41D1         fxn06_41D1:
+41D1         ; vmop 06(5): 'revmemcpy'; revmemcpy ( param1, param2, (param3 || 256) )
+41D1         vmop06_41D1: 
 41D1 DD 7E 00        ld      a, (ix+0)
 41D4 FE 00       cp      0
 41D6 28 0E       jr      z, add256_41E6      ; 0 means 256
@@ -10321,10 +10321,10 @@
 41E8 18 F0       jr      loc_41DA
 41EA         leave_41EA:
 41EA C9          ret
-41EA         ; End of function fxn06_41D1
+41EA         ; End of function vmop06_41D1
 41EB         ; =============== S U B R O U T I N E =======================================
-41EB         ; XXX 07(4): 'memset'; memset ( param1, param2.h, (param2.l || 256) ) (*,v,c)
-41EB         fxn07_41EB:
+41EB         ; vmop 07(4): 'memset'; memset ( param1, param2.h, (param2.l || 256) ) (*,v,c)
+41EB         vmop07_41EB: 
 41EB 43          ld      b, e
 41EC         loop_41EC:              ; ...
 41EC 72          ld      (hl), d
@@ -10332,10 +10332,10 @@
 41EE 23          inc     hl
 41EF 20 FB       jr      nz, loop_41EC
 41F1 C9          ret
-41F1         ; End of function fxn07_41EB
+41F1         ; End of function vmop07_41EB
 41F2         ; =============== S U B R O U T I N E =======================================
-41F2         ; XXX 08(6): 'memcpy'; memcpy ( param1, param2, (param3 || 65536) ) (*d,*s,c)
-41F2         fxn08_41F2:
+41F2         ; vmop 08(6): 'memcpy'; memcpy ( param1, param2, (param3 || 65536) ) (*d,*s,c)
+41F2         vmop08_41F2: 
 41F2 DD 46 00        ld      b, (ix+0)           ; param3 is uint16be_t count
 41F5 DD 23       inc     ix
 41F7 C5          push    bc              ; save (really just saving C since B is clobbered)
@@ -10345,10 +10345,10 @@
 41FE ED B0       ldir
 4200 C1          pop     bc              ; restore C
 4201 C9          ret
-4201         ; End of function fxn08_41F2
+4201         ; End of function vmop08_41F2
 4202         ; =============== S U B R O U T I N E =======================================
-4202         ; XXX 09(4): 'assign'; *(uint16be_t*)param1) = * *(uint16be_t**)param2)
-4202         fxn09_4202:
+4202         ; vmop 09(4): 'assign'; *(uint16be_t*)param1) = * *(uint16be_t**)param2)
+4202         vmop09_4202: 
 4202 C5          push    bc
 4203 EB          ex      de, hl
 4204 46          ld      b, (hl)
@@ -10363,10 +10363,10 @@
 420D 77          ld      (hl), a             ; *(uint16be_t*)param1) = (BC)
 420E C1          pop     bc
 420F C9          ret
-420F         ; End of function fxn09_4202
+420F         ; End of function vmop09_4202
 4210         ; =============== S U B R O U T I N E =======================================
-4210         ; XXX 0b(4): 'accum'; *(uint16be_t*)param1) += *(uint16be_t*)param2)
-4210         fxn0b_4210:
+4210         ; vmop 0b(4): 'accum'; *(uint16be_t*)param1) += *(uint16be_t*)param2)
+4210         vmop0b_4210: 
 4210 E5          push    hl              ; remember param1...
 4211 46          ld      b, (hl)
 4212 23          inc     hl
@@ -10383,23 +10383,23 @@
 421E 72          ld      (hl), d
 421F 23          inc     hl
 4220 73          ld      (hl), e             ; *(uint16be_t*)param1) = DE
-4221 CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+4221 CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 4224 C9          ret
-4224         ; End of function fxn0b_4210
+4224         ; End of function vmop0b_4210
 4225         ; =============== S U B R O U T I N E =======================================
-4225         ; XXX 0c(4): B = *(uint8_t*)param1 += *(uint8_t*)param2; flags C
-4225         fxn0c_4225:
+4225         ; vmop 0c(4): B = *(uint8_t*)param1 += *(uint8_t*)param2; flags C
+4225         vmop0c_4225: 
 4225 1A          ld      a, (de)
 4226 46          ld      b, (hl)
 4227 80          add     a, b
 4228 77          ld      (hl), a
 4229 47          ld      b, a
-422A CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+422A CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 422D C9          ret
-422D         ; End of function fxn0c_4225
+422D         ; End of function vmop0c_4225
 422E         ; =============== S U B R O U T I N E =======================================
-422E         ; XXX 0d(4): *(uint16be_t*)param1 += param2; flags C
-422E         fxn0d_422E:
+422E         ; vmop 0d(4): *(uint16be_t*)param1 += param2; flags C
+422E         vmop0d_422E: 
 422E E5          push    hl
 422F 46          ld      b, (hl)
 4230 23          inc     hl
@@ -10412,22 +10412,22 @@
 4238 72          ld      (hl), d
 4239 23          inc     hl
 423A 73          ld      (hl), e
-423B CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+423B CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 423E C9          ret
-423E         ; End of function fxn0d_422E
+423E         ; End of function vmop0d_422E
 423F         ; =============== S U B R O U T I N E =======================================
-423F         ; XXX 0e(4): B = *(uint8_t*)param1 += param2.l; flags C
-423F         fxn0e_423F:
+423F         ; vmop 0e(4): B = *(uint8_t*)param1 += param2.l; flags C
+423F         vmop0e_423F: 
 423F 7E          ld      a, (hl)
 4240 83          add     a, e
 4241 77          ld      (hl), a
 4242 47          ld      b, a
-4243 CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+4243 CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 4246 C9          ret
-4246         ; End of function fxn0e_423F
+4246         ; End of function vmop0e_423F
 4247         ; =============== S U B R O U T I N E =======================================
-4247         ; XXX 0f(4): *(uint16be_t*)param1) -= *(uint16be_t*)param2)
-4247         fxn0f_4247:
+4247         ; vmop 0f(4): *(uint16be_t*)param1) -= *(uint16be_t*)param2)
+4247         vmop0f_4247: 
 4247 E5          push    hl
 4248 46          ld      b, (hl)
 4249 23          inc     hl
@@ -10446,24 +10446,24 @@
 4257 72          ld      (hl), d
 4258 23          inc     hl
 4259 73          ld      (hl), e
-425A CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+425A CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 425D C9          ret
-425D         ; End of function fxn0f_4247
+425D         ; End of function vmop0f_4247
 425E         ; =============== S U B R O U T I N E =======================================
-425E         ; XXX 10(4): B = *(uint8_t*)param1 -= *(uint8_t*)param2; flags C
-425E         fxn10_425E:
+425E         ; vmop 10(4): B = *(uint8_t*)param1 -= *(uint8_t*)param2; flags C
+425E         vmop10_425E: 
 425E 1A          ld      a, (de)
 425F 47          ld      b, a
 4260 7E          ld      a, (hl)
 4261 90          sub     b
 4262 77          ld      (hl), a
 4263 47          ld      b, a
-4264 CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+4264 CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 4267 C9          ret
-4267         ; End of function fxn10_425E
+4267         ; End of function vmop10_425E
 4268         ; =============== S U B R O U T I N E =======================================
-4268         ; XXX 11(4): *(uint16be_t*)param1) -= param2; flags C
-4268         fxn11_4268:
+4268         ; vmop 11(4): *(uint16be_t*)param1) -= param2; flags C
+4268         vmop11_4268: 
 4268 E5          push    hl
 4269 46          ld      b, (hl)
 426A 23          inc     hl
@@ -10477,22 +10477,22 @@
 4273 72          ld      (hl), d
 4274 23          inc     hl
 4275 73          ld      (hl), e
-4276 CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+4276 CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 4279 C9          ret
-4279         ; End of function fxn11_4268
+4279         ; End of function vmop11_4268
 427A         ; =============== S U B R O U T I N E =======================================
-427A         ; XXX 12(4): B = *(uint8_t*)param1 -= param2.l; flags C
-427A         fxn12_427A:
+427A         ; vmop 12(4): B = *(uint8_t*)param1 -= param2.l; flags C
+427A         vmop12_427A: 
 427A 7E          ld      a, (hl)
 427B 93          sub     e
 427C 77          ld      (hl), a
 427D 47          ld      b, a
-427E CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+427E CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 4281 C9          ret
-4281         ; End of function fxn12_427A
+4281         ; End of function vmop12_427A
 4282         ; =============== S U B R O U T I N E =======================================
-4282         ; XXX 13(4): DE = *(uint16be_t*)param1 - *(uint16be_t*)param2; flags C
-4282         fxn13_4282:
+4282         ; vmop 13(4): DE = *(uint16be_t*)param1 - *(uint16be_t*)param2; flags C
+4282         vmop13_4282: 
 4282 46          ld      b, (hl)
 4283 23          inc     hl
 4284 4E          ld      c, (hl)
@@ -10506,23 +10506,23 @@
 428C B7          or      a
 428D ED 42       sbc     hl, bc
 428F EB          ex      de, hl
-4290 CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+4290 CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 4293 C9          ret
-4293         ; End of function fxn13_4282
+4293         ; End of function vmop13_4282
 4294         ; =============== S U B R O U T I N E =======================================
-4294         ; XXX 14(4): B = *(uint8_t*)param1 -= *(uint8_t*)param2; flags C
-4294         fxn14_4294:
+4294         ; vmop 14(4): B = *(uint8_t*)param1 -= *(uint8_t*)param2; flags C
+4294         vmop14_4294: 
 4294 1A          ld      a, (de)
 4295 47          ld      b, a
 4296 7E          ld      a, (hl)
 4297 90          sub     b
 4298 47          ld      b, a
-4299 CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+4299 CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 429C C9          ret
-429C         ; End of function fxn14_4294
+429C         ; End of function vmop14_4294
 429D         ; =============== S U B R O U T I N E =======================================
-429D         ; XXX 15(4): DE = *(uint16be_t*)param1 - param2; flags C
-429D         fxn15_429D:
+429D         ; vmop 15(4): DE = *(uint16be_t*)param1 - param2; flags C
+429D         vmop15_429D: 
 429D 46          ld      b, (hl)
 429E 23          inc     hl
 429F 4E          ld      c, (hl)
@@ -10531,21 +10531,21 @@
 42A2 B7          or      a
 42A3 ED 52       sbc     hl, de
 42A5 EB          ex      de, hl
-42A6 CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+42A6 CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 42A9 C9          ret
-42A9         ; End of function fxn15_429D
+42A9         ; End of function vmop15_429D
 42AA         ; =============== S U B R O U T I N E =======================================
-42AA         ; XXX 16(4): B = *(uint8_t*)param1 - param2.l; flags C
-42AA         fxn16_42AA:
+42AA         ; vmop 16(4): B = *(uint8_t*)param1 - param2.l; flags C
+42AA         vmop16_42AA: 
 42AA 7E          ld      a, (hl)
 42AB 93          sub     e
 42AC 47          ld      b, a
-42AD CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+42AD CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 42B0 C9          ret
-42B0         ; End of function fxn16_42AA
+42B0         ; End of function vmop16_42AA
 42B1         ; =============== S U B R O U T I N E =======================================
-42B1         ; XXX 17(5): compare multibyte; *(uint8_t*)param1 - *(uint8_t*)param2, for param3.l; flags C
-42B1         fxn17_42B1:
+42B1         ; vmop 17(5): compare multibyte; *(uint8_t*)param1 - *(uint8_t*)param2, for param3.l; flags C
+42B1         vmop17_42B1: 
 42B1 DD 7E 00        ld      a, (ix+0)           ; XXX count ???
 42B4 DD 23       inc     ix
 42B6         loop_42B6:              ; ...
@@ -10555,7 +10555,7 @@
 42B9 7E          ld      a, (hl)
 42BA 90          sub     b
 42BB 47          ld      b, a
-42BC CD 57 44        call    helperFlagsAsC_4457     ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+42BC CD 57 44        call    helperFlagsAsC_4457     ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 42BF AF          xor     a
 42C0 B9          cp      c
 42C1 20 07       jr      nz, leave_42CA
@@ -10568,10 +10568,10 @@
 42CA         leave_42CA:
 42CA F1          pop     af
 42CB C9          ret
-42CB         ; End of function fxn17_42B1
+42CB         ; End of function vmop17_42B1
 42CC         ; =============== S U B R O U T I N E =======================================
-42CC         ; XXX 18(4): DE = *(uint16be_t*)param1 & *(uint16be_t*)param2
-42CC         fxn18_42CC:
+42CC         ; vmop 18(4): DE = *(uint16be_t*)param1 & *(uint16be_t*)param2
+42CC         vmop18_42CC: 
 42CC 1A          ld      a, (de)
 42CD 46          ld      b, (hl)
 42CE A0          and     b
@@ -10584,22 +10584,22 @@
 42D5 5F          ld      e, a
 42D6 F1          pop     af
 42D7 57          ld      d, a
-42D8 CD 60 44        call    helperTestDEflagsAsC_4460   ; XXX C = (0 == DE) ? 0 : 1
+42D8 CD 60 44        call    helperTestDEflagsAsC_4460   ; test DE and set flags in c-reg:  C = (0 == DE) ? 0 : 1
 42DB C9          ret
-42DB         ; End of function fxn18_42CC
+42DB         ; End of function vmop18_42CC
 42DC         ; =============== S U B R O U T I N E =======================================
-42DC         ; XXX 19(4): B = *(uint8_t*)param1 & *(uint8_t*)param2
-42DC         fxn19_42DC:
+42DC         ; vmop 19(4): B = *(uint8_t*)param1 & *(uint8_t*)param2
+42DC         vmop19_42DC: 
 42DC 1A          ld      a, (de)
 42DD 46          ld      b, (hl)
 42DE A0          and     b
 42DF 47          ld      b, a
-42E0 CD 6E 44        call    helperTestBflagsAsC_446E    ; XXX C = (0 == B) ? 0 : 1
+42E0 CD 6E 44        call    helperTestBflagsAsC_446E    ; test B and set flags in c-reg:  C = (0 == B) ? 0 : 1
 42E3 C9          ret
-42E3         ; End of function fxn19_42DC
+42E3         ; End of function vmop19_42DC
 42E4         ; =============== S U B R O U T I N E =======================================
-42E4         ; XXX 1a(4): DE = *(uint8_t*)param1 & param2, flags C
-42E4         fxn1a_42E4:
+42E4         ; vmop 1a(4): DE = *(uint8_t*)param1 & param2, flags C
+42E4         vmop1a_42E4: 
 42E4 7E          ld      a, (hl)
 42E5 A2          and     d
 42E6 57          ld      d, a
@@ -10607,120 +10607,120 @@
 42E8 7E          ld      a, (hl)
 42E9 A3          and     e
 42EA 5F          ld      e, a            ; DE = *(uint8_t*)param1 & param2
-42EB CD 60 44        call    helperTestDEflagsAsC_4460   ; XXX C = (0 == DE) ? 0 : 1
+42EB CD 60 44        call    helperTestDEflagsAsC_4460   ; test DE and set flags in c-reg:  C = (0 == DE) ? 0 : 1
 42EE C9          ret
-42EE         ; End of function fxn1a_42E4
+42EE         ; End of function vmop1a_42E4
 42EF         ; =============== S U B R O U T I N E =======================================
-42EF         ; XXX 1b(4): B = *(uint8_t*)param1 & param2.l, flags C
-42EF         fxn1b_42EF:
+42EF         ; vmop 1b(4): B = *(uint8_t*)param1 & param2.l, flags C
+42EF         vmop1b_42EF: 
 42EF 7E          ld      a, (hl)
 42F0 A3          and     e
 42F1 47          ld      b, a
-42F2 CD 6E 44        call    helperTestBflagsAsC_446E    ; XXX C = (0 == B) ? 0 : 1
+42F2 CD 6E 44        call    helperTestBflagsAsC_446E    ; test B and set flags in c-reg:  C = (0 == B) ? 0 : 1
 42F5 C9          ret
-42F5         ; End of function fxn1b_42EF
+42F5         ; End of function vmop1b_42EF
 42F6         ; =============== S U B R O U T I N E =======================================
-42F6         ; XXX 1f(4): *(uint16_t*)param1 |= *(uint16_t*)param2
-42F6         fxn1f_42F6:
-42F6 CD FF 42        call    fxn20_42FF          ; XXX 20(4): *(uint8_t*)param1 |= *(uint8_t*)param2
+42F6         ; vmop 1f(4): *(uint16_t*)param1 |= *(uint16_t*)param2
+42F6         vmop1f_42F6: 
+42F6 CD FF 42        call    vmop20_42FF         ; vmop 20(4): *(uint8_t*)param1 |= *(uint8_t*)param2
 42F9 23          inc     hl
 42FA 13          inc     de
-42FB CD FF 42        call    fxn20_42FF          ; XXX 20(4): *(uint8_t*)param1 |= *(uint8_t*)param2
+42FB CD FF 42        call    vmop20_42FF         ; vmop 20(4): *(uint8_t*)param1 |= *(uint8_t*)param2
 42FE C9          ret
-42FE         ; End of function fxn1f_42F6
+42FE         ; End of function vmop1f_42F6
 42FF         ; =============== S U B R O U T I N E =======================================
-42FF         ; XXX 20(4): *(uint8_t*)param1 |= *(uint8_t*)param2
-42FF         fxn20_42FF:
+42FF         ; vmop 20(4): *(uint8_t*)param1 |= *(uint8_t*)param2
+42FF         vmop20_42FF: 
 42FF 1A          ld      a, (de)
 4300 B6          or      (hl)
 4301 77          ld      (hl), a
 4302 C9          ret
-4302         ; End of function fxn20_42FF
+4302         ; End of function vmop20_42FF
 4303         ; =============== S U B R O U T I N E =======================================
-4303         ; XXX 21(4): *(uint8_t*)param1 |= param2.h
-4303         fxn21_4303:
+4303         ; vmop 21(4): *(uint8_t*)param1 |= param2.h
+4303         vmop21_4303: 
 4303 7A          ld      a, d
 4304 B6          or      (hl)
 4305 77          ld      (hl), a
 4306 23          inc     hl
-4306         ; End of function fxn21_4303
+4306         ; End of function vmop21_4303
 4307         ; =============== S U B R O U T I N E =======================================
-4307         ; XXX 22(4): *(uint8_t*)param1 |= param2.l
-4307         fxn22_4307:
+4307         ; vmop 22(4): *(uint8_t*)param1 |= param2.l
+4307         vmop22_4307: 
 4307 7B          ld      a, e
 4308 B6          or      (hl)
 4309 77          ld      (hl), a
 430A C9          ret
-430A         ; End of function fxn22_4307
+430A         ; End of function vmop22_4307
 430B         ; =============== S U B R O U T I N E =======================================
-430B         ; XXX 23(4): *(uint16_t*)param1 &= *(uint16_t*)param2
-430B         fxn23_430B:
-430B CD 14 43        call    fxn24_4314          ; XXX 24(4): *(uint8_t*)param1 &= *(uint8_t*)param2
+430B         ; vmop 23(4): *(uint16_t*)param1 &= *(uint16_t*)param2
+430B         vmop23_430B: 
+430B CD 14 43        call    vmop24_4314         ; vmop 24(4): *(uint8_t*)param1 &= *(uint8_t*)param2
 430E 23          inc     hl
 430F 13          inc     de
-4310 CD 14 43        call    fxn24_4314          ; XXX 24(4): *(uint8_t*)param1 &= *(uint8_t*)param2
+4310 CD 14 43        call    vmop24_4314         ; vmop 24(4): *(uint8_t*)param1 &= *(uint8_t*)param2
 4313 C9          ret
-4313         ; End of function fxn23_430B
+4313         ; End of function vmop23_430B
 4314         ; =============== S U B R O U T I N E =======================================
-4314         ; XXX 24(4): *(uint8_t*)param1 &= *(uint8_t*)param2
-4314         fxn24_4314:
+4314         ; vmop 24(4): *(uint8_t*)param1 &= *(uint8_t*)param2
+4314         vmop24_4314: 
 4314 1A          ld      a, (de)
 4315 A6          and     (hl)
 4316 77          ld      (hl), a
 4317 C9          ret
-4317         ; End of function fxn24_4314
+4317         ; End of function vmop24_4314
 4318         ; =============== S U B R O U T I N E =======================================
-4318         ; XXX 25(4): *(uint8_t*)param1 &= param2.h
-4318         fxn25_4318:
+4318         ; vmop 25(4): *(uint8_t*)param1 &= param2.h
+4318         vmop25_4318: 
 4318 7A          ld      a, d
 4319 A6          and     (hl)
 431A 77          ld      (hl), a
 431B 23          inc     hl
-431B         ; End of function fxn25_4318
+431B         ; End of function vmop25_4318
 431C         ; =============== S U B R O U T I N E =======================================
-431C         ; XXX 26(4): *(uint8_t*)param1 &= param2.l
-431C         fxn26_431C:
+431C         ; vmop 26(4): *(uint8_t*)param1 &= param2.l
+431C         vmop26_431C: 
 431C 7B          ld      a, e
 431D A6          and     (hl)
 431E 77          ld      (hl), a
 431F C9          ret
-431F         ; End of function fxn26_431C
+431F         ; End of function vmop26_431C
 4320         ; =============== S U B R O U T I N E =======================================
-4320         ; XXX 27(4): *(uint16_t*)param1 ^= *(uint16_t*)param2
-4320         fxn27_4320:
-4320 CD 29 43        call    fxn28_4329          ; XXX 28(4): *(uint8_t*)param1 ^= *(uint8_t*)param2
+4320         ; vmop 27(4): *(uint16_t*)param1 ^= *(uint16_t*)param2
+4320         vmop27_4320: 
+4320 CD 29 43        call    vmop28_4329         ; vmop 28(4): *(uint8_t*)param1 ^= *(uint8_t*)param2
 4323 23          inc     hl
 4324 13          inc     de
-4325 CD 29 43        call    fxn28_4329          ; XXX 28(4): *(uint8_t*)param1 ^= *(uint8_t*)param2
+4325 CD 29 43        call    vmop28_4329         ; vmop 28(4): *(uint8_t*)param1 ^= *(uint8_t*)param2
 4328 C9          ret
-4328         ; End of function fxn27_4320
+4328         ; End of function vmop27_4320
 4329         ; =============== S U B R O U T I N E =======================================
-4329         ; XXX 28(4): *(uint8_t*)param1 ^= *(uint8_t*)param2
-4329         fxn28_4329:
+4329         ; vmop 28(4): *(uint8_t*)param1 ^= *(uint8_t*)param2
+4329         vmop28_4329: 
 4329 1A          ld      a, (de)
 432A AE          xor     (hl)
 432B 77          ld      (hl), a
 432C C9          ret
-432C         ; End of function fxn28_4329
+432C         ; End of function vmop28_4329
 432D         ; =============== S U B R O U T I N E =======================================
-432D         ; XXX 29(4): *(uint8_t*)param1 ^= param2.h
-432D         fxn29_432D:
+432D         ; vmop 29(4): *(uint8_t*)param1 ^= param2.h
+432D         vmop29_432D: 
 432D 7A          ld      a, d
 432E AE          xor     (hl)
 432F 77          ld      (hl), a
 4330 23          inc     hl
-4330         ; End of function fxn29_432D
+4330         ; End of function vmop29_432D
 4331         ; =============== S U B R O U T I N E =======================================
-4331         ; XXX 2a(4): *(uint8_t*)param1 ^= param2.l
-4331         fxn2a_4331:
+4331         ; vmop 2a(4): *(uint8_t*)param1 ^= param2.l
+4331         vmop2a_4331: 
 4331 7B          ld      a, e
 4332 AE          xor     (hl)
 4333 77          ld      (hl), a
 4334 C9          ret
-4334         ; End of function fxn2a_4331
+4334         ; End of function vmop2a_4331
 4335         ; =============== S U B R O U T I N E =======================================
-4335         ; XXX 2b(4): *(uint16be_t*)param1 >>= param2.l
-4335         fxn2b_4335:
+4335         ; vmop 2b(4): *(uint16be_t*)param1 >>= param2.l
+4335         vmop2b_4335: 
 4335 C5          push    bc
 4336 46          ld      b, (hl)
 4337 23          inc     hl
@@ -10735,10 +10735,10 @@
 4342 70          ld      (hl), b
 4343 C1          pop     bc
 4344 C9          ret
-4344         ; End of function fxn2b_4335
+4344         ; End of function vmop2b_4335
 4345         ; =============== S U B R O U T I N E =======================================
-4345         ; XXX 2c(4): *(uint8_t*)param1 >>= param2.l
-4345         fxn2c_4345:
+4345         ; vmop 2c(4): *(uint8_t*)param1 >>= param2.l
+4345         vmop2c_4345: 
 4345 56          ld      d, (hl)
 4346         loop_4346:              ; ...
 4346 CB 3A       srl     d
@@ -10746,10 +10746,10 @@
 4349 20 FB       jr      nz, loop_4346
 434B 72          ld      (hl), d
 434C C9          ret
-434C         ; End of function fxn2c_4345
+434C         ; End of function vmop2c_4345
 434D         ; =============== S U B R O U T I N E =======================================
-434D         ; XXX 2d(4): *(uint16be_t*)param1 <<= param2.l
-434D         fxn2d_434D:
+434D         ; vmop 2d(4): *(uint16be_t*)param1 <<= param2.l
+434D         vmop2d_434D: 
 434D C5          push    bc              ; save
 434E 46          ld      b, (hl)
 434F 23          inc     hl
@@ -10764,10 +10764,10 @@
 435A 70          ld      (hl), b             ; big-endian; going backwards
 435B C1          pop     bc              ; restore
 435C C9          ret
-435C         ; End of function fxn2d_434D
+435C         ; End of function vmop2d_434D
 435D         ; =============== S U B R O U T I N E =======================================
-435D         ; XXX 2e(4): *(uint8_t*)param1 <<= param2.l
-435D         fxn2e_435D:
+435D         ; vmop 2e(4): *(uint8_t*)param1 <<= param2.l
+435D         vmop2e_435D: 
 435D 56          ld      d, (hl)
 435E         loop_435E:              ; ...
 435E CB 22       sla     d
@@ -10775,52 +10775,52 @@
 4361 20 FB       jr      nz, loop_435E
 4363 72          ld      (hl), d
 4364 C9          ret
-4364         ; End of function fxn2e_435D
+4364         ; End of function vmop2e_435D
 4365         ; =============== S U B R O U T I N E =======================================
-4365         ; XXX 32(2): 'goto'; goto param1
-4365         fxn32_4365:
+4365         ; vmop 32(2): 'goto'; goto param1
+4365         vmop32_4365: 
 4365 E5          push    hl
 4366 DD E1       pop     ix              ; (we don't have to balance IX since we're changing it)
 4368 C9          ret
-4368         ; End of function fxn32_4365
+4368         ; End of function vmop32_4365
 4369         ; =============== S U B R O U T I N E =======================================
-4369         ; XXX 33(2): 'if00c': if ( 0 != C ) { goto param1 }
-4369         fxn33_4369:
-4369 AF          xor     a               ; 'false'?
-436A B1          or      c               ; wut?
-436B 28 F8       jr      z, fxn32_4365       ; XXX 32(2): 'goto'; goto param1
+4369         ; vmop 33(2): 'ifzero': if ( Z ) { goto param1 }
+4369         vmop33_4369: 
+4369 AF          xor     a               ; zero
+436A B1          or      c
+436B 28 F8       jr      z, vmop32_4365      ; vmop 32(2): 'goto'; goto param1
 436D         leave_436D:
 436D DD 2B       dec     ix              ; (balance IX; no param2)
 436F DD 2B       dec     ix
 4371 C9          ret
-4371         ; End of function fxn33_4369
+4371         ; End of function vmop33_4369
 4372         ; =============== S U B R O U T I N E =======================================
-4372         ; XXX 34(2): 'nif00c': if ( 0 != C ) { goto param1 }
-4372         fxn34_4372:
+4372         ; vmop 34(2): 'ifnonzero': if ( NZ ) { goto param1 }
+4372         vmop34_4372: 
 4372 AF          xor     a
-4373 B1          or      c               ; wut?
-4374 20 EF       jr      nz, fxn32_4365      ; XXX 32(2): 'goto'; goto param1
+4373 B1          or      c
+4374 20 EF       jr      nz, vmop32_4365         ; vmop 32(2): 'goto'; goto param1
 4376 18 F5       jr      leave_436D
-4376         ; End of function fxn34_4372
+4376         ; End of function vmop34_4372
 4378         ; =============== S U B R O U T I N E =======================================
-4378         ; XXX 35(2): 'if80c': if ( C ) { goto param1 }
-4378         fxn35_4378:
-4378 3E 80       ld      a, 80h
-437A B9          cp      c               ; wut?
-437B 28 E8       jr      z, fxn32_4365       ; XXX 32(2): 'goto'; goto param1
+4378         ; vmop 35(2): 'ifcarry': if ( Cy ) { goto param1 }
+4378         vmop35_4378: 
+4378 3E 80       ld      a, 80h          ; carry indicator
+437A B9          cp      c
+437B 28 E8       jr      z, vmop32_4365      ; vmop 32(2): 'goto'; goto param1
 437D 18 EE       jr      leave_436D
-437D         ; End of function fxn35_4378
+437D         ; End of function vmop35_4378
 437F         ; =============== S U B R O U T I N E =======================================
-437F         ; XXX 36(2): 'nif80c': if ( 0x80 != C ) { goto param1 }
-437F         fxn36_437F:
+437F         ; vmop 36(2): 'ifnotcarry': if ( NC ) { goto param1 }
+437F         vmop36_437F: 
 437F 3E 80       ld      a, 80h
-4381 B9          cp      c               ; wut?
-4382 20 E1       jr      nz, fxn32_4365      ; XXX 32(2): 'goto'; goto param1
+4381 B9          cp      c
+4382 20 E1       jr      nz, vmop32_4365         ; vmop 32(2): 'goto'; goto param1
 4384 18 E7       jr      leave_436D
-4384         ; End of function fxn36_437F
+4384         ; End of function vmop36_437F
 4386         ; =============== S U B R O U T I N E =======================================
-4386         ; XXX 37(4): 'nif16p'; (! *((uint16be_t*)param2) ), goto param1
-4386         fxn37_4386:
+4386         ; vmop 37(4): 'nif16p'; (! *((uint16be_t*)param2) ), goto param1
+4386         vmop37_4386: 
 4386 C5          push    bc
 4387 EB          ex      de, hl
 4388 46          ld      b, (hl)
@@ -10835,10 +10835,10 @@
 4396         leave_4396:
 4396 C1          pop     bc
 4397 C9          ret
-4397         ; End of function fxn37_4386
+4397         ; End of function vmop37_4386
 4398         ; =============== S U B R O U T I N E =======================================
-4398         ; XXX 38(4): 'nifp'; (! *((uint8_t*)param2) ), goto param1
-4398         fxn38_4398:
+4398         ; vmop 38(4): 'nifp'; (! *((uint8_t*)param2) ), goto param1
+4398         vmop38_4398: 
 4398 1A          ld      a, (de)
 4399 B7          or      a
 439A 20 03       jr      nz, leave_439F
@@ -10846,10 +10846,10 @@
 439D DD E1       pop     ix
 439F         leave_439F:
 439F C9          ret
-439F         ; End of function fxn38_4398
+439F         ; End of function vmop38_4398
 43A0         ; =============== S U B R O U T I N E =======================================
-43A0         ; XXX 39(4): 'if16p'; if ( *((uint16be_t*)param2) ), goto param1
-43A0         fxn39_43A0:
+43A0         ; vmop 39(4): 'if16p'; if ( *((uint16be_t*)param2) ), goto param1
+43A0         vmop39_43A0: 
 43A0 C5          push    bc              ; save
 43A1 EB          ex      de, hl
 43A2 46          ld      b, (hl)
@@ -10864,10 +10864,10 @@
 43B0         leave_43B0:
 43B0 C1          pop     bc              ; restore
 43B1 C9          ret
-43B1         ; End of function fxn39_43A0
+43B1         ; End of function vmop39_43A0
 43B2         ; =============== S U B R O U T I N E =======================================
-43B2         ; XXX 3a(4): 'ifp'; if ( *((uint8_t*)param2) ) { goto param1 }
-43B2         fxn3a_43B2:
+43B2         ; vmop 3a(4): 'ifp'; if ( *((uint8_t*)param2) ) { goto param1 }
+43B2         vmop3a_43B2: 
 43B2 1A          ld      a, (de)
 43B3 B7          or      a
 43B4 28 03       jr      z, leave_43B9
@@ -10875,10 +10875,10 @@
 43B7 DD E1       pop     ix
 43B9         leave_43B9:
 43B9 C9          ret
-43B9         ; End of function fxn3a_43B2
+43B9         ; End of function vmop3a_43B2
 43BA         ; =============== S U B R O U T I N E =======================================
-43BA         ; XXX 3b(4): ''; if ( --(*(uint16be_t*)param2) ) { goto param1 }
-43BA         fxn3b_43BA:
+43BA         ; vmop 3b(4): ''; if ( --(*(uint16be_t*)param2) ) { goto param1 }
+43BA         vmop3b_43BA: 
 43BA C5          push    bc              ; save
 43BB E5          push    hl              ; remember param1...
 43BC EB          ex      de, hl
@@ -10900,10 +10900,10 @@
 43D1         leave_43D1:
 43D1 C1          pop     bc              ; restore
 43D2 C9          ret
-43D2         ; End of function fxn3b_43BA
+43D2         ; End of function vmop3b_43BA
 43D3         ; =============== S U B R O U T I N E =======================================
-43D3         ; XXX 3c(4): 'next'; if ( 0 != --*((uint8_t*)param2) ) { goto param1 }
-43D3         fxn3c_43D3:
+43D3         ; vmop 3c(4): 'next'; if ( 0 != --*((uint8_t*)param2) ) { goto param1 }
+43D3         vmop3c_43D3: 
 43D3 EB          ex      de, hl
 43D4 35          dec     (hl)
 43D5 28 03       jr      z, leave_43DA       ; leave if --*((uint8_t*)param2) == 0
@@ -10911,49 +10911,49 @@
 43D8 DD E1       pop     ix
 43DA         leave_43DA:
 43DA C9          ret
-43DA         ; End of function fxn3c_43D3
+43DA         ; End of function vmop3c_43D3
 43DB         ; =============== S U B R O U T I N E =======================================
-43DB         ; XXX 3d(2): process single block (rst 8) @ param1
-43DB         fxn3d_43DB:
+43DB         ; vmop 3d(2): process single block (rst 8) @ param1
+43DB         vmop3d_43DB: 
 43DB DD 2B       dec     ix              ; (no param2, that will be part of the payload)
 43DD DD 2B       dec     ix
 43DF DD E5       push    ix              ; save
 43E1 E5          push    hl
 43E2 DD E1       pop     ix
-43E4 CD 67 41        call    impl_rst8_4167      ; XXX process block @ IX
+43E4 CD 67 41        call    impl_rst8_4167      ; process VM op block @ IX
 43E7 DD E1       pop     ix              ; restore
 43E9 C9          ret
-43E9         ; End of function fxn3d_43DB
+43E9         ; End of function vmop3d_43DB
 43EA         ; =============== S U B R O U T I N E =======================================
-43EA         ; XXX 3e(2): process block sequence (rst 10) @ param1
-43EA         fxn3e_43EA:
+43EA         ; vmop 3e(2): 'run'; execute (rst 10) @ param1
+43EA         vmop3e_43EA: 
 43EA DD 2B       dec     ix              ; (no param2, that will be part of the payload)
 43EC DD 2B       dec     ix
-43EE CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+43EE CD 23 41        call    impl_rst10_4123         ; run VM program
 43F1 C9          ret
-43F1         ; End of function fxn3e_43EA
+43F1         ; End of function vmop3e_43EA
 43F2         ; =============== S U B R O U T I N E =======================================
-43F2         ; XXX 43(2): process block sequence (rst 10) @ *(uint16be_t*)param1 (i.e. big-endian ptr)
-43F2         fxn43_43F2:
+43F2         ; vmop 43(2): 'run_le'; execute (rst 10) @ param1 (LE)
+43F2         vmop43_43F2: 
 43F2 DD 2B       dec     ix              ; (no param2, that will be part of the payload)
 43F4 DD 2B       dec     ix
-43F6 7C          ld      a, h            ; presto-swappo big-endian
+43F6 7C          ld      a, h            ; presto-swappo little-endian
 43F7 65          ld      h, l
 43F8 6F          ld      l, a
-43F9 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+43F9 CD 23 41        call    impl_rst10_4123         ; run VM program
 43FC C9          ret
-43FC         ; End of function fxn43_43F2
+43FC         ; End of function vmop43_43F2
 43FD         ; =============== S U B R O U T I N E =======================================
-43FD         ; XXX 3f(2): 'usr'; invoke assembly @ param1
-43FD         fxn3f_43FD:
+43FD         ; vmop 3f(2): 'usr'; invoke assembly @ param1
+43FD         vmop3f_43FD: 
 43FD DD 2B       dec     ix              ; (no param2, that will be part of the payload)
 43FF DD 2B       dec     ix
 4401 E9          jp      (hl)            ; thunk over
-4401         ; End of function fxn3f_43FD
-4402 C9          ret                 ; XXX all by myself...
+4401         ; End of function vmop3f_43FD
+4402 C9          ret                 ; all by myself...
 4403         ; =============== S U B R O U T I N E =======================================
-4403         ; XXX 40(4): 'computed goto'; *(unit8_t*)param2 indexes (1-relative) into length-prefixed array of pointers @ param1; goto
-4403         fxn40_4403:
+4403         ; vmop 40(4): 'computed goto'; *(unit8_t*)param2 indexes (1-relative) into length-prefixed array of pointers @ param1; goto
+4403         vmop40_4403: 
 4403 1A          ld      a, (de)             ; the index 1 - n
 4404 FE 00       cp      0
 4406 28 13       jr      z, leave_441B
@@ -10973,10 +10973,10 @@
 4419 DD E1       pop     ix              ; goto
 441B         leave_441B:
 441B C9          ret
-441B         ; End of function fxn40_4403
+441B         ; End of function vmop40_4403
 441C         ; =============== S U B R O U T I N E =======================================
-441C         ; XXX 41(4): XXX run rst8 block via length-prefixed table at param1 indexed *param2 (1-relative)
-441C         fxn41_441C:
+441C         ; vmop 41(4): XXX run rst8 block via length-prefixed table at param1 indexed *param2 (1-relative)
+441C         vmop41_441C: 
 441C 1A          ld      a, (de)
 441D FE 00       cp      0
 441F 28 1B       jr      z, leave_443C       ; 1-relative index; zero not an option
@@ -10996,14 +10996,14 @@
 4432 DD E5       push    ix
 4434 E5          push    hl
 4435 DD E1       pop     ix
-4437 CD 67 41        call    impl_rst8_4167      ; XXX process block @ IX
+4437 CD 67 41        call    impl_rst8_4167      ; process VM op block @ IX
 443A DD E1       pop     ix
 443C         leave_443C:
 443C C9          ret
-443C         ; End of function fxn41_441C
+443C         ; End of function vmop41_441C
 443D         ; =============== S U B R O U T I N E =======================================
-443D         ; XXX 42(4): XXX run rst10 program via length-prefixed table at param1 indexed *param2 (1-relative)
-443D         fxn42_443D:
+443D         ; vmop 42(4): XXX run rst10 program via length-prefixed table at param1 indexed *param2 (1-relative) (entries BE)
+443D         vmop42_443D: 
 443D 1A          ld      a, (de)
 443E FE 00       cp      0
 4440 28 14       jr      z, leave_4456
@@ -11020,12 +11020,12 @@
 4450 23          inc     hl
 4451 5E          ld      e, (hl)             ; get rst10 progam start; big-endian
 4452 EB          ex      de, hl
-4453 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+4453 CD 23 41        call    impl_rst10_4123         ; run VM program
 4456         leave_4456:
 4456 C9          ret
-4456         ; End of function fxn42_443D
+4456         ; End of function vmop42_443D
 4457         ; =============== S U B R O U T I N E =======================================
-4457         ; XXX C = z ? 0 : ( cy ? 80h : 1 )
+4457         ; convert cpu flags to c reg:  C = z ? 0 : ( cy ? 80h : 1 )
 4457         helperFlagsAsC_4457:            ; ...
 4457 0E 00       ld      c, 0
 4459 C8          ret     z
@@ -11035,7 +11035,7 @@
 445F C9          ret
 445F         ; End of function helperFlagsAsC_4457
 4460         ; =============== S U B R O U T I N E =======================================
-4460         ; XXX C = (0 == DE) ? 0 : 1
+4460         ; test DE and set flags in c-reg:  C = (0 == DE) ? 0 : 1
 4460         helperTestDEflagsAsC_4460:      ; ...
 4460 0E 00       ld      c, 0
 4462 AF          xor     a
@@ -11051,7 +11051,7 @@
 446D C9          ret
 446D         ; End of function helperTestDEflagsAsC_4460
 446E         ; =============== S U B R O U T I N E =======================================
-446E         ; XXX C = (0 == B) ? 0 : 1
+446E         ; test B and set flags in c-reg:  C = (0 == B) ? 0 : 1
 446E         helperTestBflagsAsC_446E:       ; ...
 446E 0E 00       ld      c, 0
 4470 AF          xor     a
@@ -11062,8 +11062,8 @@
 4476 C9          ret
 4476         ; End of function helperTestBflagsAsC_446E
 4477         ; =============== S U B R O U T I N E =======================================
-4477         ; XXX 46(6):
-4477         fxn46_4477:
+4477         ; vmop 46(6):
+4477         vmop46_4477: 
 4477 C5          push    bc              ; save
 4478 DD 46 00        ld      b, (ix+0)
 447B DD 23       inc     ix
@@ -11148,10 +11148,10 @@
 44F0 FD E1       pop     iy              ; restore
 44F2 C1          pop     bc              ; restore
 44F3 C9          ret
-44F3         ; End of function fxn46_4477
+44F3         ; End of function vmop46_4477
 44F4         ; =============== S U B R O U T I N E =======================================
-44F4         ; XXX 47(6):
-44F4         fxn47_44F4:
+44F4         ; vmop 47(6):
+44F4         vmop47_44F4: 
 44F4 C5          push    bc
 44F5 DD 46 00        ld      b, (ix+0)
 44F8 DD 23       inc     ix
@@ -11250,10 +11250,10 @@
 4585 FD E1       pop     iy
 4587 C1          pop     bc
 4588 C9          ret
-4588         ; End of function fxn47_44F4
+4588         ; End of function vmop47_44F4
 4589         ; =============== S U B R O U T I N E =======================================
-4589         ; XXX 48(6): some BCD stuff
-4589         fxn48_4589:
+4589         ; vmop 48(6): some BCD stuff
+4589         vmop48_4589: 
 4589 C5          push    bc
 458A FD E5       push    iy
 458C DD 46 00        ld      b, (ix+0)
@@ -11354,7 +11354,7 @@
 4623 5E          ld      e, (hl)
 4624 EB          ex      de, hl
 4625 C3 B8 45        jp      loc_45B8
-4625         ; End of function fxn48_4589
+4625         ; End of function vmop48_4589
 4628         ; =============== S U B R O U T I N E =======================================
 4628         ; XXX HL => decimal (l, h, e, d, a)
 4628         sub_4628:
@@ -11408,8 +11408,8 @@
 4667 C9          ret
 4667         ; End of function divide_4657
 4668         ; =============== S U B R O U T I N E =======================================
-4668         ; XXX 49(6): some BCD stuff
-4668         fxn49_4668:
+4668         ; vmop 49(6): some BCD stuff
+4668         vmop49_4668: 
 4668 C5          push    bc
 4669 FD E5       push    iy
 466B E5          push    hl
@@ -11485,7 +11485,7 @@
 46F0 FD 72 00        ld      (iy+0), d
 46F3 FD 73 01        ld      (iy+1), e
 46F6 C3 85 46        jp      leave_4685
-46F6         ; End of function fxn49_4668
+46F6         ; End of function vmop49_4668
 46F9         ; =============== S U B R O U T I N E =======================================
 46F9         ; XXX multiply; DE += HL * A; (dec IY, dec c)
 46F9         multiplyaccumulate_46F9:        ; ...
@@ -11516,28 +11516,28 @@
 4715 C9          ret
 4715         ; End of function multiply_4708
 4716         ; =============== S U B R O U T I N E =======================================
-4716         ; XXX 4a(4): receive multiple from port; param1 = ptr, param2.h = count, param2.l = port
-4716         fxn4a_4716:
+4716         ; vmop 4a(4): receive multiple from port; param1 = ptr, param2.h = count, param2.l = port
+4716         vmop4a_4716: 
 4716 C5          push    bc
 4717 42          ld      b, d
 4718 4B          ld      c, e
 4719 ED B2       inir
 471B C1          pop     bc
 471C C9          ret
-471C         ; End of function fxn4a_4716
+471C         ; End of function vmop4a_4716
 471D         ; =============== S U B R O U T I N E =======================================
-471D         ; XXX 4b(4): send multiple to port; param1 = ptr, param2.h = count, param2.l = port
-471D         fxn4b_471D:
+471D         ; vmop 4b(4): send multiple to port; param1 = ptr, param2.h = count, param2.l = port
+471D         vmop4b_471D: 
 471D C5          push    bc
 471E 42          ld      b, d
 471F 4B          ld      c, e
 4720 ED B3       otir
 4722 C1          pop     bc
 4723 C9          ret
-4723         ; End of function fxn4b_471D
+4723         ; End of function vmop4b_471D
 4724         ; =============== S U B R O U T I N E =======================================
-4724         ; XXX 5e(4):
-4724         fxn5e_4724:
+4724         ; vmop 5e(4):
+4724         vmop5e_4724: 
 4724 C5          push    bc
 4725 E5          push    hl
 4726 7B          ld      a, e
@@ -11596,7 +11596,7 @@
 477A 18 E5       jr      leave_4761
 477C         locret_477C: 
 477C C9          ret
-477C         ; End of function fxn5e_4724
+477C         ; End of function vmop5e_4724
 477D         ; =============== S U B R O U T I N E =======================================
 477D         ; XXX compose 8 bytes for something; d,e,(6 bytes @ bc)
 477D         sub_477D:
@@ -11747,8 +11747,8 @@
 4801 01          db    1                 ; XXX (this keeps showing up)
 4802 05          db    5
 4803         ; =============== S U B R O U T I N E =======================================
-4803         ; XXX 5a(4):
-4803         fxn5a_4803:
+4803         ; vmop 5a(4):
+4803         vmop5a_4803: 
 4803 C5          push    bc
 4804 44          ld      b, h
 4805 4D          ld      c, l
@@ -11781,7 +11781,7 @@
 4833         loc_4833:
 4833 C1          pop     bc
 4834 C9          ret
-4834         ; End of function fxn5a_4803
+4834         ; End of function vmop5a_4803
 4835         ; =============== S U B R O U T I N E =======================================
 4835         sub_4835:
 4835 7B          ld      a, e
@@ -11856,8 +11856,8 @@
 487E C9          ret
 487E         ; End of function sub_4871
 487F         ; =============== S U B R O U T I N E =======================================
-487F         ; XXX 5b(4):
-487F         fxn5b_487F:
+487F         ; vmop 5b(4):
+487F         vmop5b_487F: 
 487F C5          push    bc
 4880 E5          push    hl
 4881 21 30 C1        ld      hl, unk_C130
@@ -11891,10 +11891,10 @@
 48AA E1          pop     hl
 48AB C1          pop     bc
 48AC C9          ret
-48AC         ; End of function fxn5b_487F
+48AC         ; End of function vmop5b_487F
 48AD         ; =============== S U B R O U T I N E =======================================
-48AD         ; XXX 5c(4):
-48AD         fxn5c_48AD:
+48AD         ; vmop 5c(4):
+48AD         vmop5c_48AD: 
 48AD C5          push    bc
 48AE E5          push    hl
 48AF 21 00 C3        ld      hl, byte_C300
@@ -11941,10 +11941,10 @@
 48E8 23          inc     hl
 48E9 10 FB       djnz    loc_48E6
 48EB 18 F3       jr      leave_48E0
-48EB         ; End of function fxn5c_48AD
+48EB         ; End of function vmop5c_48AD
 48ED         ; =============== S U B R O U T I N E =======================================
-48ED         ; XXX 5d(4):
-48ED         fxn5d_48ED:
+48ED         ; vmop 5d(4):
+48ED         vmop5d_48ED: 
 48ED C5          push    bc
 48EE 3E 00       ld      a, 0
 48F0 32 40 C3        ld      (byte_C340), a
@@ -12012,7 +12012,7 @@
 495D         loc_495D:
 495D CD 62 49        call    sub_4962
 4960 18 AC       jr      leave_490E
-4960         ; End of function fxn5d_48ED
+4960         ; End of function vmop5d_48ED
 4962         ; =============== S U B R O U T I N E =======================================
 4962         sub_4962:
 4962 E5          push    hl
@@ -12122,8 +12122,8 @@
 49DA C3 B5 49        jp      leave_49B5
 49DA         ; End of function sub_49BA
 49DD         ; =============== S U B R O U T I N E =======================================
-49DD         ; XXX 5f(4):
-49DD         fxn5f_49DD:
+49DD         ; vmop 5f(4):
+49DD         vmop5f_49DD: 
 49DD C5          push    bc
 49DE 7B          ld      a, e
 49DF FE 00       cp      0
@@ -12170,7 +12170,7 @@
 4A2C         leave_4A2C:
 4A2C C1          pop     bc
 4A2D C9          ret
-4A2D         ; End of function fxn5f_49DD
+4A2D         ; End of function vmop5f_49DD
 4A2E         ; =============== S U B R O U T I N E =======================================
 4A2E         sub_4A2E:
 4A2E 45          ld      b, l
@@ -12208,8 +12208,8 @@
 4A52 C9          ret
 4A52         ; End of function sub_4A4E
 4A53         ; =============== S U B R O U T I N E =======================================
-4A53         ; XXX 60(4):
-4A53         fxn60_4A53:
+4A53         ; vmop 60(4):
+4A53         vmop60_4A53: 
 4A53 C5          push    bc
 4A54 7B          ld      a, e
 4A55 B7          or      a
@@ -12225,7 +12225,7 @@
 4A68         leave_4A68:
 4A68 C1          pop     bc
 4A69 C9          ret
-4A69         ; End of function fxn60_4A53
+4A69         ; End of function vmop60_4A53
 4A6A         ; =============== S U B R O U T I N E =======================================
 4A6A         sub_4A6A:
 4A6A 7B          ld      a, e
@@ -12242,8 +12242,8 @@
 4A79 C9          ret
 4A79         ; End of function sub_4A75
 4A7A         ; =============== S U B R O U T I N E =======================================
-4A7A         ; XXX 62(4): ??? load data reference into to a struct at c200?
-4A7A         fxn62_4A7A:
+4A7A         ; vmop 62(4): ??? load data reference into to a struct at c200?  note param1 and param2 are endian-reversed
+4A7A         vmop62_4A7A: 
 4A7A C5          push    bc              ; save
 4A7B E5          push    hl              ; save param1, a pointer
 4A7C 21 F0 C1        ld      hl, byte_C1F0       ; XXX a counter related to unk_ C200
@@ -12270,28 +12270,28 @@
 4A9B 23          inc     hl              ; skip offset 2,3
 4A9C 23          inc     hl
 4A9D 23          inc     hl
-4A9E 70          ld      (hl), b             ; pstruct[4] = param1 (big-endian)
+4A9E 70          ld      (hl), b             ; pstruct[4] = param1 (little-endian)
 4A9F 23          inc     hl
 4AA0 71          ld      (hl), c
 4AA1 23          inc     hl
-4AA2 72          ld      (hl), d             ; pstruct[6] = param2 (big-endian)
+4AA2 72          ld      (hl), d             ; pstruct[6] = param2 (little-endian)
 4AA3 23          inc     hl
 4AA4 73          ld      (hl), e
 4AA5 E1          pop     hl
 4AA6 36 02       ld      (hl), 2             ; XXX pstruct[0] = 2
 4AA8 C1          pop     bc              ; restore
 4AA9 C9          ret
-4AA9         ; End of function fxn62_4A7A
+4AA9         ; End of function vmop62_4A7A
 4AAA         ; =============== S U B R O U T I N E =======================================
-4AAA         ; XXX 63(1): ??? run bytecode at 7803 table indexed by param1.h (1-relative)
-4AAA         fxn63_4AAA:
-4AAA DD 2B       dec     ix              ; only has param1.h XXX but param1 is read little endian, so hmm
+4AAA         ; vmop 63(1): ??? run bytecode at 7803 table indexed by param1.h (1-relative); note param1 and param2 are endian-reversed
+4AAA         vmop63_4AAA: 
+4AAA DD 2B       dec     ix
 4AAC DD 2B       dec     ix
 4AAE DD 2B       dec     ix
 4AB0 3A 02 78        ld      a, (byte_7802)      ; XXX length of table 7803
 4AB3 57          ld      d, a
 4AB4 14          inc     d
-4AB5 7C          ld      a, h
+4AB5 7C          ld      a, h            ; param1.h (note param1 is endian-reversed in this case)
 4AB6 B7          or      a
 4AB7 C8          ret     z               ; leave if 0 == param1.h
 4AB8 BA          cp      d
@@ -12306,12 +12306,12 @@
 4AC5 23          inc     hl
 4AC6 56          ld      d, (hl)             ; load program address from 7803 table
 4AC7 EB          ex      de, hl
-4AC8 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+4AC8 CD 23 41        call    impl_rst10_4123         ; run VM program
 4ACB C9          ret
-4ACB         ; End of function fxn63_4AAA
+4ACB         ; End of function vmop63_4AAA
 4ACC         ; =============== S U B R O U T I N E =======================================
-4ACC         ; XXX 61(4):
-4ACC         fxn61_4ACC:
+4ACC         ; vmop 61(4):
+4ACC         vmop61_4ACC: 
 4ACC C5          push    bc
 4ACD FD E5       push    iy
 4ACF DD E5       push    ix
@@ -12354,7 +12354,7 @@
 4B0D FD E1       pop     iy
 4B0F C1          pop     bc
 4B10 C9          ret
-4B10         ; End of function fxn61_4ACC
+4B10         ; End of function vmop61_4ACC
 4B11         ; =============== S U B R O U T I N E =======================================
 4B11         sub_4B11:
 4B11 ED 4B AF C0     ld      bc, (byte_C0AF)
@@ -13086,28 +13086,22 @@
 4FC3 32 AE C0        ld      (byte_C0AE), a
 4FC6 11 00 C5        ld      de, 0C500h
 4FC9 CD FB 5A        call    sub_5AFB            ; XXX clear 512 bytes of stuff in a particular way
-4FCC 21 D5 4F        ld      hl, unk_4FD5
-4FCF CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+4FCC 21 D5 4F        ld      hl, byte_4FD5
+4FCF CD 23 41        call    impl_rst10_4123         ; run VM program
 4FD2 C3 E2 58        jp      sub_58E2
 4FD2         ; End of function sub_4FB8
-4FD5 46      unk_4FD5:db  46h ; F            ; ...
-4FD6 C5          db 0C5h ; Å
-4FD7 21          db  21h ; !
-4FD8 81          db  81h ; 
-4FD9 21          db  21h ; !
-4FDA 04          db    4
-4FDB 00          db    0
-4FDC 04          db    4
-4FDD C5          db 0C5h ; Å
-4FDE 03          db    3
-4FDF 00          db    0
-4FE0 01          db    1
-4FE1 04          db    4
-4FE2 C5          db 0C5h ; Å
-4FE3 05          db    5
-4FE4 00          db    0
-4FE5 01          db    1
-4FE6 00          db    0
+4FD5 46      byte_4FD5:db 46h            ; ...
+4FD5                             ; vmop46_4477
+4FD6 C5 21       dw 21C5h
+4FD8 81 21       dw 2181h
+4FDA 04 00       dw 4
+4FDC 04          db 4                ; vmop04_41B5
+4FDD C5 03       dw 3C5h                 ; c503
+4FDF 00 01       dw 100h                 ; 0001
+4FE1 04          db 4                ; vmop04_41B5
+4FE2 C5 05       dw 5C5h                 ; c505
+4FE4 00 01       dw 100h                 ; 0001
+4FE6 00          db 0                ; vmop00_end_419E
 4FE7         ; =============== S U B R O U T I N E =======================================
 4FE7         sub_4FE7:
 4FE7 CD 85 59        call    sub_5985
@@ -13152,15 +13146,15 @@
 502A A7          and     a
 502B 28 19       jr      z, loc_5046
 502D CD 68 51        call    sub_5168
-5030 21 B9 51        ld      hl, unk_51B9
-5033 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5030 21 B9 51        ld      hl, byte_51B9
+5033 CD 23 41        call    impl_rst10_4123         ; run VM program
 5036 CB 01       rlc     c
 5038 30 06       jr      nc, loc_5040
 503A 21 00 00        ld      hl, 0
 503D 22 F0 C8        ld      (word_C8F0), hl
 5040         loc_5040:
-5040 21 F4 51        ld      hl, unk_51F4
-5043 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5040 21 F4 51        ld      hl, byte_51F4
+5043 CD 23 41        call    impl_rst10_4123         ; run VM program
 5046         loc_5046:
 5046 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
 5046         ; End of function sub_5010
@@ -13489,98 +13483,66 @@
 51A1 D1          pop     de
 51A2 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
 51A2         ; End of function sub_5168
-51A5 02          db    2
+51A5 02          db 2                ; vmop02_41AE
 51A6 20          db  20h
 51A7 C8          db 0C8h ; È
 51A8 D1          db 0D1h ; Ñ
 51A9 03          db    3
-51AA 48          db  48h ; H
-51AB C8          db 0C8h ; È
-51AC 25          db  25h ; %
-51AD 81          db  81h ; 
-51AE 04          db    4
-51AF 04          db    4
-51B0 03          db    3
-51B1 03          db    3
-51B2 C8          db 0C8h ; È
-51B3 29          db  29h ; )
-51B4 14          db  14h
-51B5 37          db  37h ; 7
-51B6 00          db    0
+51AA 48          db 48h              ; vmop48_4589
+51AB C8 25       dw 25C8h
+51AD 81 04       dw 481h
+51AF 04 03       dw 304h
+51B1 03          db 3                ; vmop03_41B1
+51B2 C8 29       dw 29C8h
+51B4 14 37       dw 3714h
+51B6 00          db 0                ; vmop00_end_419E
 51B7 00          db    0
 51B8 C9          db 0C9h ; É
-51B9 48      unk_51B9:db  48h ; H            ; ...
-51BA C8          db 0C8h ; È
-51BB 60          db  60h ; `
-51BC C5          db 0C5h ; Å
-51BD 03          db    3
-51BE 03          db    3
-51BF 02          db    2
-51C0 02          db    2
-51C1 C8          db 0C8h ; È
-51C2 63          db  63h ; c
-51C3 C5          db 0C5h ; Å
-51C4 04          db    4
-51C5 04          db    4
-51C6 C8          db 0C8h ; È
-51C7 63          db  63h ; c
-51C8 00          db    0
-51C9 41          db  41h ; A
-51CA 48          db  48h ; H
-51CB C8          db 0C8h ; È
-51CC 64          db  64h ; d
-51CD C5          db 0C5h ; Å
-51CE 05          db    5
-51CF 03          db    3
-51D0 02          db    2
-51D1 47          db  47h ; G
-51D2 C8          db 0C8h ; È
-51D3 04          db    4
-51D4 C5          db 0C5h ; Å
-51D5 21          db  21h ; !
-51D6 02          db    2
-51D7 00          db    0
-51D8 03          db    3
-51D9 C8          db 0C8h ; È
-51DA 06          db    6
-51DB 14          db  14h
-51DC 31          db  31h ; 1
-51DD 47          db  47h ; G
-51DE C8          db 0C8h ; È
-51DF 08          db    8
-51E0 C5          db 0C5h ; Å
-51E1 22          db  22h ; "
-51E2 02          db    2
-51E3 00          db    0
-51E4 03          db    3
-51E5 C8          db 0C8h ; È
-51E6 0A          db  0Ah
-51E7 14          db  14h
-51E8 37          db  37h ; 7
-51E9 01          db    1
-51EA C8          db 0C8h ; È
-51EB F0          db 0F0h ; ð
-51EC C5          db 0C5h ; Å
-51ED 18          db  18h
-51EE 0F          db  0Fh
-51EF C8          db 0C8h ; È
-51F0 F0          db 0F0h ; ð
-51F1 C5          db 0C5h ; Å
-51F2 14          db  14h
-51F3 00          db    0
-51F4 48      unk_51F4:db  48h ; H            ; ...
-51F5 C8          db 0C8h ; È
-51F6 10          db  10h
-51F7 C8          db 0C8h ; È
-51F8 F0          db 0F0h ; ð
-51F9 06          db    6
-51FA 03          db    3
-51FB 03          db    3
-51FC C8          db 0C8h ; È
-51FD 16          db  16h
-51FE 14          db  14h
-51FF 37          db  37h ; 7
-5200 00          db    0
+51B9 48      byte_51B9:db 48h            ; ...
+51B9                             ; vmop48_4589
+51BA C8 60       dw 60C8h                ; c860
+51BC C5 03       dw 3C5h
+51BE 03 02       dw 203h
+51C0 02          db 2                ; vmop02_41AE
+51C1 C8 63       dw 63C8h
+51C3 C5 04       dw 4C5h
+51C5 04          db 4                ; vmop04_41B5
+51C6 C8 63       dw 63C8h
+51C8 00 41       dw 4100h
+51CA 48          db 48h              ; vmop48_4589
+51CB C8 64       dw 64C8h                ; c846
+51CD C5 05       dw 5C5h
+51CF 03 02       dw 203h
+51D1 47          db 47h              ; vmop47_44F4
+51D2 C8 04       dw 4C8h
+51D4 C5 21       dw 21C5h
+51D6 02 00       dw 2
+51D8 03          db 3                ; vmop03_41B1
+51D9 C8 06       dw 6C8h
+51DB 14 31       dw 3114h
+51DD 47          db 47h              ; vmop47_44F4
+51DE C8 08       dw 8C8h
+51E0 C5 22       dw 22C5h
+51E2 02 00       dw 2
+51E4 03          db 3                ; vmop03_41B1
+51E5 C8 0A       dw 0AC8h
+51E7 14 37       dw 3714h
+51E9 01          db 1                ; vmop01_41A7
+51EA C8 F0       dw 0F0C8h
+51EC C5 18       dw 18C5h
+51EE 0F          db 0Fh              ; vmop0e_423F
+51EF C8 F0       dw 0F0C8h
+51F1 C5 14       dw 14C5h
+51F3 00          db 0                ; vmop00_end_419E
+51F4 48      byte_51F4:db 48h            ; ...
+51F4                             ; vmop48_4589
+51F5 C8 10       dw 10C8h                ; c810
+51F7 C8 F0       dw 0F0C8h               ; c8f0
+51F9 06 03       dw 306h                 ; 0603
+51FB 03          db 3                ; vmop03_41B1
+51FC C8 16       dw 16C8h                ; c816
+51FE 14 37       dw 3714h                ; 1437
+5200 00          db 0                ; vmop00_end_419E
 5201 44          db  44h ; D
 5202 34          db  34h ; 4
 5203 1A          db  1Ah
@@ -13589,7 +13551,7 @@
 5206         ; =============== S U B R O U T I N E =======================================
 5206         sub_5206:
 5206 CD 5A 52        call    sub_525A
-5209 21 8F C0        ld      hl, 0C08Fh
+5209 21 8F C0        ld      hl,  word_C08E+1        ; XXX relates to first reset bit number found in 68h; 0 = none found
 520C 7E          ld      a, (hl)
 520D A7          and     a
 520E C8          ret     z
@@ -14518,15 +14480,15 @@
 5734 6F          ld      l, a
 5735 B4          or      h
 5736 C8          ret     z               ; don't do it if null
-5737 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5737 CD 23 41        call    impl_rst10_4123         ; run VM program
 573A C9          ret
 573A         ; End of function sub_572F
 573B         ; =============== S U B R O U T I N E =======================================
 573B         sub_573B:
 573B 3E 01       ld      a, 1
 573D 32 81 C0        ld      (byte_C081), a
-5740 21 FA 57        ld      hl, unk_57FA        ; XXX a RST 10 list
-5743 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5740 21 FA 57        ld      hl, byte_57FA       ; XXX a RST 10 list
+5743 CD 23 41        call    impl_rst10_4123         ; run VM program
 5746 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
 5746         ; End of function sub_573B
 5749 02          db    2
@@ -14701,32 +14663,22 @@
 57F7 50          db  50h ; P
 57F8 C5          db 0C5h ; Å
 57F9 03          db    3
-57FA 48      unk_57FA:db  48h ; H            ; ...
-57FA                             ; XXX a RST 10 list
-57FB C8          db 0C8h ; È
-57FC 60          db  60h ; `
-57FD C0          db 0C0h ; À
-57FE B3          db 0B3h ; ³
-57FF 03          db    3
-5800 02          db    2
-5801 02          db    2
-5802 C8          db 0C8h ; È
-5803 63          db  63h ; c
-5804 C0          db 0C0h ; À
-5805 B4          db 0B4h ; ´
-5806 0E          db  0Eh
-5807 C8          db 0C8h ; È
-5808 63          db  63h ; c
-5809 00          db    0
-580A 41          db  41h ; A
-580B 48          db  48h ; H
-580C C8          db 0C8h ; È
-580D 64          db  64h ; d
-580E C0          db 0C0h ; À
-580F B5          db 0B5h ; µ
-5810 03          db    3
-5811 02          db    2
-5812 00          db    0
+57FA 48      byte_57FA:db 48h            ; ...
+57FA                             ; vmop48_4589
+57FB C8 60       dw 60C8h                ; c860
+57FD C0 B3       dw 0B3C0h               ; c0b3
+57FF 03 02       dw 203h                 ; 0302
+5801 02          db 2                ; vmop02_41AE
+5802 C8 63       dw 63C8h                ; c863
+5804 C0 B4       dw 0B4C0h               ; c0b4
+5806 0E          db 0Eh              ; vmop0e_423F
+5807 C8 63       dw 63C8h                ; c863
+5809 00 41       dw 4100h                ; 0041
+580B 48          db 48h              ; vmop48_4589
+580C C8 64       dw 64C8h                ; c864
+580E C0 B5       dw 0B5C0h               ; c0b5
+5810 03 02       dw 203h                 ; 0302
+5812 00          db 0                ; vmop00_end_419E
 5813 0A          db  0Ah
 5814 02          db    2
 5815 04          db    4
@@ -14851,19 +14803,26 @@
 588C DE          db 0DEh ; Þ
 588D 93          db  93h ; “
 588E E4          db 0E4h ; ä
-588F 97          sub     a
-5890 EA 20 D8        jp      pe, unk_D820
-5893 BE          cp      (hl)
-5894 AF          xor     a
-5895 C4 9C E3        call    nz, unk_E39C
-5898 A4          and     h
-5899 E0          ret     po
-589A E0          ret     po
-589B DE 9C       sbc     a, 9Ch ; 'œ'
-589D 92          sub     d
-589E B6          or      (hl)
-589F D9          exx
-58A0 C3 86 20        jp      loc_2086
+588F 97          db  97h ; —
+5890 EA          db 0EAh ; ê
+5891 20          db  20h
+5892 D8          db 0D8h ; Ø
+5893 BE          db 0BEh ; ¾
+5894 AF          db 0AFh ; ¯
+5895 C4          db 0C4h ; Ä
+5896 9C          db  9Ch ; œ
+5897 E3          db 0E3h ; ã
+5898 A4          db 0A4h ; ¤
+5899 E0          db 0E0h ; à
+589A E0          db 0E0h ; à
+589B DE          db 0DEh ; Þ
+589C 9C          db  9Ch ; œ
+589D 92          db  92h ; ’
+589E B6          db 0B6h ; ¶
+589F D9          db 0D9h ; Ù
+58A0 C3          db 0C3h ; Ã
+58A1 86          db  86h ; †
+58A2 20          db  20h
 58A3 94          db  94h ; ”
 58A4 F7          db 0F7h ; ÷
 58A5 20          db  20h
@@ -14911,27 +14870,29 @@
 58CF 9C          db  9Ch ; œ
 58D0 E3          db 0E3h ; ã
 58D1 20          db  20h
-58D2 20 20       jr      nz, loc_58F4
-58D4 98          sbc     a, b
-58D5 E0          ret     po
-58D6 DE 9B       sbc     a, 9Bh ; '›'
-58D8 92          sub     d
-58D9 A1          and     c
-58DA B6          or      (hl)
-58DB B7          or      a
-58DC 08          ex      af, af'
-58DD 03          inc     bc
-58DE 63          ld      h, e
-58DF 08          ex      af, af'
-58E0 00          nop
-58E1 00          nop
+58D2 20          db  20h
+58D3 20          db  20h
+58D4 98          db  98h ; ˜
+58D5 E0          db 0E0h ; à
+58D6 DE          db 0DEh ; Þ
+58D7 9B          db  9Bh ; ›
+58D8 92          db  92h ; ’
+58D9 A1          db 0A1h ; ¡
+58DA B6          db 0B6h ; ¶
+58DB B7          db 0B7h ; ·
+58DC 08          db    8
+58DD 03          db    3
+58DE 63          db  63h ; c
+58DF 08          db    8
+58E0 00          db    0
+58E1 00          db    0
 58E2         ; =============== S U B R O U T I N E =======================================
 58E2         sub_58E2:
 58E2 21 70 C0        ld      hl, byte_C070
 58E5 34          inc     (hl)
 58E6 18 04       jr      locret_58EC         ; wut? the following ret was not good enough?
 58E6         ; End of function sub_58E2
-58E8 C9          ret
+58E8 C9          ret                 ; all by myself...
 58E9         ; =============== S U B R O U T I N E =======================================
 58E9         sub_58E9:
 58E9 32 70 C0        ld      (byte_C070), a
@@ -14945,7 +14906,6 @@
 58F1 00          nop
 58F2 00          nop
 58F3 00          nop
-58F4         loc_58F4:
 58F4 00          nop
 58F5 00          nop
 58F6 00          nop
@@ -15069,7 +15029,7 @@
 597E 7C          ld      a, h            ; presto-swappo big-endian
 597F 65          ld      h, l
 5980 6F          ld      l, a
-5981 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5981 CD 23 41        call    impl_rst10_4123         ; run VM program
 5984 C9          ret
 5984         ; End of function sub_596F
 5985         ; =============== S U B R O U T I N E =======================================
@@ -15274,7 +15234,7 @@
 5A71         ; XXX protect DE around RST 10
 5A71         sub_5A71:
 5A71 D5          push    de
-5A72 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5A72 CD 23 41        call    impl_rst10_4123         ; run VM program
 5A75 D1          pop     de
 5A76 C9          ret
 5A76         ; End of function sub_5A71
@@ -15397,7 +15357,7 @@
 5AEF 36 62       ld      (hl), 62h           ; XXX opcode 62h
 5AF1 AF          xor     a
 5AF2 32 EC C1        ld      (byte_C1EC), a
-5AF5 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5AF5 CD 23 41        call    impl_rst10_4123         ; run VM program
 5AF8 E1          pop     hl
 5AF9 D1          pop     de
 5AFA C9          ret
@@ -15815,7 +15775,7 @@
 5CCE 2C          inc     l
 5CCF 5E          ld      e, (hl)
 5CD0 EB          ex      de, hl
-5CD1 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5CD1 CD 23 41        call    impl_rst10_4123         ; run VM program
 5CD4 C9          ret
 5CD4         ; End of function sub_5C9A
 5CD5         ; =============== S U B R O U T I N E =======================================
@@ -15863,12 +15823,12 @@
 5D1B 32 02 81        ld      (byte_8102), a      ; XXX ??? this motor 'phase'
 5D1E 28 19       jr      z, loc_5D39
 5D20 21 66 5D        ld      hl, byte_5D66       ; XXX fed to rst 10
-5D23 CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5D23 CD 23 41        call    impl_rst10_4123         ; run VM program
 5D26 CB 01       rlc     c
 5D28 38 03       jr      c, loc_5D2D
 5D2A 21 85 5D        ld      hl, byte_5D85       ; XXX fed to rst 10
 5D2D         loc_5D2D:
-5D2D CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5D2D CD 23 41        call    impl_rst10_4123         ; run VM program
 5D30 CB 01       rlc     c
 5D32 38 05       jr      c, loc_5D39
 5D34 21 02 81        ld      hl, byte_8102       ; XXX ??? this motor 'phase'
@@ -15908,20 +15868,16 @@
 5D65 C9          ret
 5D65         ; End of function sub_5D44
 5D66 04      byte_5D66:db 4              ; ...
-5D66                             ; XXX fed to rst 10
-5D67 81 02       dw 281h
-5D69 00 03       dw 300h
-5D6B 01          db    1
-5D6C 81          db  81h ; 
-5D6D 08          db    8
-5D6E 81          db  81h ; 
-5D6F 0A          db  0Ah
-5D70 0F          db  0Fh
-5D71 81          db  81h ; 
-5D72 08          db    8
-5D73 81          db  81h ; 
-5D74 06          db    6
-5D75 00          db    0
+5D66                             ; vmop04_41B5
+5D67 81 02       dw 281h                 ; 8102
+5D69 00 03       dw 300h                 ; 0003
+5D6B 01          db 1                ; vmop01_41A7
+5D6C 81 08       dw 881h                 ; 8108
+5D6E 81 0A       dw 0A81h                ; 810a
+5D70 0F          db 0Fh              ; vmop0f_4247
+5D71 81 08       dw 881h                 ; 8108
+5D73 81 06       dw 681h                 ; 8106
+5D75 00          db 0                ; vmop00_end_419E
 5D76 04          db    4
 5D77 81          db  81h ; 
 5D78 02          db    2
@@ -15938,10 +15894,10 @@
 5D83 81          db  81h ; 
 5D84 06          db    6
 5D85 0F      byte_5D85:db 0Fh            ; ...
-5D85                             ; XXX fed to rst 10
-5D86 81 0E       dw 0E81h
-5D88 81 08       dw 881h
-5D8A 00          db 0
+5D85                             ; vmop0f_4247
+5D86 81 0E       dw 0E81h                ; 810e
+5D88 81 08       dw 881h                 ; 8108
+5D8A 00          db 0                ; vmop00_end_419E
 5D8B         ; =============== S U B R O U T I N E =======================================
 5D8B         sub_5D8B:
 5D8B 21 16 81        ld      hl, unk_8116
@@ -15970,36 +15926,26 @@
 5DB7         loc_5DB7:
 5DB7 32 41 81        ld      (byte_8141), a
 5DBA 21 C1 5D        ld      hl, byte_5DC1
-5DBD CD 23 41        call    impl_rst10_4123         ; XXX process block sequence through rst 8
+5DBD CD 23 41        call    impl_rst10_4123         ; run VM program
 5DC0 C9          ret
 5DC0         ; End of function sub_5D8B
 5DC1 01      byte_5DC1:db 1              ; ...
-5DC1                             ; XXX fed to rst 10
-5DC2 81          db  81h ; 
-5DC3 37          db  37h ; 7
-5DC4 81          db  81h ; 
-5DC5 21          db  21h ; !
-5DC6 01          db    1
-5DC7 81          db  81h ; 
-5DC8 3B          db  3Bh ; ;
-5DC9 81          db  81h ; 
-5DCA 23          db  23h ; #
-5DCB 01          db    1
-5DCC 81          db  81h ; 
-5DCD 43          db  43h ; C
-5DCE 81          db  81h ; 
-5DCF 26          db  26h ; &
-5DD0 01          db    1
-5DD1 81          db  81h ; 
-5DD2 47          db  47h ; G
-5DD3 81          db  81h ; 
-5DD4 28          db  28h ; (
-5DD5 62          db  62h ; b
-5DD6 30          db  30h ; 0
-5DD7 81          db  81h ; 
-5DD8 1D          db  1Dh
-5DD9 00          db    0
-5DDA 00          db    0
+5DC1                             ; vmop01_41A7
+5DC2 81 37       dw 3781h                ; 8137
+5DC4 81 21       dw 2181h                ; 8121
+5DC6 01          db 1                ; vmop01_41A7
+5DC7 81 3B       dw 3B81h                ; 813b
+5DC9 81 23       dw 2381h                ; 8123
+5DCB 01          db 1                ; vmop01_41A7
+5DCC 81 43       dw 4381h                ; 8143
+5DCE 81 26       dw 2681h                ; 8126
+5DD0 01          db    1                 ; vmop01_41A7
+5DD1 81 47       dw 4781h                ; 8147
+5DD3 81 28       dw 2881h                ; 8128
+5DD5 62          db 62h              ; vmop62_4A7A
+5DD6 30 81       dw unk_8130             ; XXX loaded 29 bytes from 5ddc
+5DD8 1D 00       dw 29
+5DDA 00          db 0                ; vmop00_end_419E
 5DDB 00          db    0
 5DDC 92      byte_5DDC:db 92h            ; ...
 5DDC                             ; XXX init 8130, 29 bytes
@@ -16696,7 +16642,7 @@
 62FB         sub_62FB:
 62FB         ; FUNCTION CHUNK AT 6500 SIZE 00000005 BYTES
 62FB 21 0F 66        ld      hl, byte_660F       ; XXX 9 by init C91C; will be processed by rst 10
-62FE 11 1C C9        ld      de, byte_C91C       ; XXX initted by byte_660F; will be processed by rst 10
+62FE 11 1C C9        ld      de, byte_C91C       ; XXX dynamic rst10 program; room for 9 by, initted by byte_660F and build elsewhere
 6301 01 09 00        ld      bc, 9
 6304 ED B0       ldir
 6306 AF          xor     a
@@ -16714,7 +16660,7 @@
 6328 21 90 65        ld      hl, unk_6590
 632B 22 27 C9        ld      (word_C927), hl
 632E 21 6B 66        ld      hl, byte_666B       ; mode 5 related
-6331 CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+6331 CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 6334 21 88 65        ld      hl, aComtack        ; "COMTACK"
 6337         loc_6337:
 6337 3A 07 C9        ld      a, (byte_C907)      ; XXX a flag that byte_C908 reached zero
@@ -16740,7 +16686,7 @@
 635D 21 8E 64        ld      hl, loc_648E
 6360 22 16 C9        ld      (word_C916), hl
 6363 21 AF 65        ld      hl, byte_65AF
-6366 CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+6366 CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 6369 EB          ex      de, hl
 636A 18 E3       jr      loc_634F
 636C         loc_636C:
@@ -16751,7 +16697,7 @@
 6376 B7          or      a
 6377 28 BE       jr      z, loc_6337
 6379 21 04 67        ld      hl, byte_6704
-637C CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+637C CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 637F 3A 25 C9        ld      a, (byte_C925)      ; XXX serial speed; 0 = XXX, 1 = YYY
 6382 3D          dec     a               ; (1=>0; 0=>ff) (a cheap way of mapping invalid to low speed)
 6383 CD 72 60        call    setupSerial_6072        ; setup for bit-banged serial
@@ -16761,7 +16707,7 @@
 638E         loc_638E:
 638E 21 96 67        ld      hl, byte_6796       ; XXX length prefixed for RST processing
 6391 21 96 67        ld      hl, byte_6796       ; wut? we just did this
-6394 CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+6394 CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 6397 C3 39 64        jp      loc_6439
 6397         ; End of function sub_62FB
 639A         ; =============== S U B R O U T I N E =======================================
@@ -16912,7 +16858,7 @@
 64AD 5F          ld      e, a
 64AE 16 00       ld      d, 0
 64B0 19          add     hl, de
-64B1 CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+64B1 CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 64B4 21 50 65        ld      hl, 6550h
 64B7 19          add     hl, de
 64B8 CD 4E 66        call    sub_664E            ; XXX send length-prefixed data to sub_ 6130
@@ -16945,7 +16891,7 @@
 64EB         ; =============== S U B R O U T I N E =======================================
 64EB         sub_64EB:
 64EB 21 E9 67        ld      hl, byte_67E9
-64EE CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+64EE CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 64F1 CD EE 60        call    sub_60EE            ; XXX disable CTCa0,a1; set 66 b7,6 high (could be part of exit serial)
 64F4         wait_64F4:              ; ...
 64F4 CD 73 61        call    sub_6173            ; XXX in 66h bits 3,2,1
@@ -16969,7 +16915,7 @@
 650E         ; =============== S U B R O U T I N E =======================================
 650E         ; XXX length prefixed data to RST and spin wait on C907
 650E         sub_650E:
-650E CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+650E CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 6511         wait_6511:              ; ...
 6511 3A 07 C9        ld      a, (byte_C907)      ; XXX a flag that byte_C908 reached zero
 6514 B7          or      a
@@ -17157,8 +17103,8 @@
 65F6 E5          push    hl
 65F7 FE 08       cp      8
 65F9 20 08       jr      nz, loc_6603
-65FB 21 18 66        ld      hl, unk_6618
-65FE CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+65FB 21 18 66        ld      hl, byte_6618
+65FE CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 6601 18 09       jr      loc_660C
 6603         loc_6603:
 6603 21 0F 66        ld      hl, byte_660F       ; XXX 9 by init C91C; will be processed by rst 10
@@ -17170,26 +17116,24 @@
 660E C9          ret
 660E         ; End of function sub_65F5
 660F 62      byte_660F:db 62h            ; ...
-660F                             ; XXX 9 by init C91C; will be processed by rst 10
-6610 22          db  22h ; "
-6611 C9          db 0C9h ; É
+660F                             ; vmop62_4A7A
+6610 22 C9       dw unk_C922
 6612 03 00       dw 3
-6614 00          db 0
-6615 39          db 39h
+6614 00          db 0                ; vmop00_end_419E
+6615 39          db 39h              ; (this will be in C922, as referenced above)
 6616 01          db 1
 6617 00          db 0
-6618 05      unk_6618:db    5            ; ...
-6619 39          db  39h ; 9
-661A 03          db    3
-661B 1D          db  1Dh
-661C 20          db  20h
-661D 1D          db  1Dh
+6618 05      byte_6618:db 5              ; ...
+6618                             ; length-prefixed RST 10 program
+6619 39          db 39h              ; vmop39_43A0
+661A 03 1D       dw 1D03h                ; 031D
+661C 20 1D       dw 1D20h                ; 201d
 661E         ; =============== S U B R O U T I N E =======================================
 661E         sub_661E:
 661E F5          push    af
 661F E5          push    hl
 6620 21 2A 66        ld      hl, unk_662A
-6623 CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+6623 CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 6626 E1          pop     hl
 6627 F1          pop     af
 6628 18 CB       jr      sub_65F5
@@ -17199,7 +17143,7 @@
 662C 1C          db  1Ch
 662D 0E          db  0Eh
 662E         ; =============== S U B R O U T I N E =======================================
-662E         ; XXX length prefixed data to RST 10 processing
+662E         ; XXX length prefixed data to C91C for RST 10
 662E         sub_662E:
 662E D5          push    de
 662F E5          push    hl
@@ -17211,7 +17155,7 @@
 6636 22 1D C9        ld      (word_C91D), hl         ; XXX a data pointer
 6639 16 00       ld      d, 0
 663B ED 53 1F C9     ld      (word_C91F), de         ; XXX a length associated with data pointer @c91d
-663F 21 1C C9        ld      hl, byte_C91C       ; XXX initted by byte_660F; will be processed by rst 10
+663F 21 1C C9        ld      hl, byte_C91C       ; XXX dynamic rst10 program; room for 9 by, initted by byte_660F and build elsewhere
 6642 CD 48 66        call    protectedRst10_6648     ; XXX do RST 10 preserving BC,DE
 6645         leave_6645:
 6645 E1          pop     hl
@@ -17852,7 +17796,7 @@
 6924 3A 30 C9        ld      a, (word_C92F+1)
 6927 C6 05       add     a, 5
 6929 77          ld      (hl), a
-692A CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+692A CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 692D 2A 29 C9        ld      hl, (word_C929)
 6930 CD FA 69        call    bswapHL_69FA        ; byte swap HL for endian conversion
 6933 EB          ex      de, hl
@@ -17881,7 +17825,7 @@
 6965         loc_6965:
 6965 CD 2A 64        call    sub_642A
 6968 21 80 69        ld      hl, byte_6980
-696B CD 2E 66        call    sub_662E            ; XXX length prefixed data to RST 10 processing
+696B CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
 696E 3E 02       ld      a, 2            ; fxn 2; set isrCTCb2 task 02 to 08E6
 6970 DF          rst     18h             ; handy functions 0-4 as per A
 6971 C9          ret
@@ -25933,16 +25877,16 @@ C916 ?? ??   word_C916:ds 2              ; ...
 C918 ?? ??   word_C918:ds 2              ; ...
 C91A ?? ??   word_C91A:ds 2              ; ...
 C91C ??      byte_C91C:ds 1              ; ...
-C91C                             ; XXX initted by byte_660F; will be processed by rst 10
+C91C                             ; XXX dynamic rst10 program; room for 9 by, initted by byte_660F and build elsewhere
 C91D ?? ??   word_C91D:ds 2              ; ...
 C91D                             ; XXX a data pointer
 C91F ?? ??   word_C91F:ds 2              ; ...
 C91F                             ; XXX a length associated with data pointer @c91d
 C921 ??          ds 1
-C922 ??          ds 1
+C922 ??      unk_C922:ds 1
 C923 ??          ds 1
 C924 ??      byte_C924:ds 1              ; ...
-C924                             ; XXX last byte of C91F packet
+C924                             ; XXX last byte of C91C program
 C925 ??      byte_C925:ds 1              ; ...
 C925                             ; XXX serial speed; 0 = XXX, 1 = YYY
 C926 ??      byte_C926:ds 1              ; ...
