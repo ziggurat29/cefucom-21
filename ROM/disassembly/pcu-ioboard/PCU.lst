@@ -10080,7 +10080,7 @@
 408E 77 44       dw vmop46_4477          ; vmop 46(6):
 4090 F4 44       dw vmop47_44F4          ; vmop 47(6):
 4092 89 45       dw vmop48_4589          ; vmop 48(6): some BCD stuff
-4094 68 46       dw vmop49_4668          ; vmop 49(6): some BCD stuff
+4094 68 46       dw vmop49_4668          ; vmop 49(6): 'bcd2bin'; BCD to binary; param1 = dest, param2 = bcdbuffer, param3.h = #bcddigits, param3.l = mode (0=8bit,2=16bit)
 4096 16 47       dw vmop4a_4716          ; vmop 4a(4): receive multiple from port; param1 = ptr, param2.h = count, param2.l = port
 4098 1D 47       dw vmop4b_471D          ; vmop 4b(4): send multiple to port; param1 = ptr, param2.h = count, param2.l = port
 409A 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
@@ -11408,100 +11408,100 @@
 4667 C9          ret
 4667         ; End of function divide_4657
 4668         ; =============== S U B R O U T I N E =======================================
-4668         ; vmop 49(6): some BCD stuff
+4668         ; vmop 49(6): 'bcd2bin'; BCD to binary; param1 = dest, param2 = bcdbuffer, param3.h = #bcddigits, param3.l = mode (0=8bit,2=16bit)
 4668         vmop49_4668: 
-4668 C5          push    bc
-4669 FD E5       push    iy
+4668 C5          push    bc              ; save
+4669 FD E5       push    iy              ; save
 466B E5          push    hl
-466C FD E1       pop     iy
+466C FD E1       pop     iy              ; IY is param1
 466E DD 46 00        ld      b, (ix+0)
 4671 DD 23       inc     ix
 4673 DD 4E 00        ld      c, (ix+0)
-4676 DD 23       inc     ix
+4676 DD 23       inc     ix              ; BC is param3
 4678 78          ld      a, b
 4679 B7          or      a
-467A 28 09       jr      z, leave_4685
+467A 28 09       jr      z, leave_4685       ; leave if 0 == # digits
 467C 79          ld      a, c
 467D FE 00       cp      0
-467F 28 08       jr      z, loc_4689
+467F 28 08       jr      z, bcd8bit_4689         ; mode 0: BCD to uint8_t
 4681 FE 02       cp      2
-4683 28 32       jr      z, loc_46B7
+4683 28 32       jr      z, bcd16bit_46B7        ; mode 2: BCD to uint16be_t
 4685         leave_4685:
-4685 FD E1       pop     iy
-4687 C1          pop     bc
+4685 FD E1       pop     iy              ; restore
+4687 C1          pop     bc              ; restore
 4688 C9          ret
-4689         loc_4689:
-4689 FD E5       push    iy
+4689         bcd8bit_4689:
+4689 FD E5       push    iy              ; remember param1...
 468B D5          push    de
 468C FD E1       pop     iy
 468E 48          ld      c, b
 468F 06 00       ld      b, 0
 4691 FD 09       add     iy, bc
 4693 FD 2B       dec     iy
-4695 FD 7E 00        ld      a, (iy+0)
-4698 E6 0F       and     0Fh
+4695 FD 7E 00        ld      a, (iy+0)           ; get the first digit
+4698 E6 0F       and     0Fh             ; ensure nybble
 469A 16 00       ld      d, 0
 469C 5F          ld      e, a
 469D FD 2B       dec     iy
 469F 0D          dec     c
-46A0 28 0E       jr      z, loc_46B0
+46A0 28 0E       jr      z, nomoredigits_46B0
 46A2 21 0A 00        ld      hl, 10
-46A5 CD F9 46        call    multiplyaccumulate_46F9     ; XXX multiply; DE += HL * A; (dec IY, dec c)
-46A8 28 06       jr      z, loc_46B0
+46A5 CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46A8 28 06       jr      z, nomoredigits_46B0
 46AA 21 64 00        ld      hl, 100
-46AD CD F9 46        call    multiplyaccumulate_46F9     ; XXX multiply; DE += HL * A; (dec IY, dec c)
-46B0         loc_46B0:
-46B0 FD E1       pop     iy
-46B2 FD 73 00        ld      (iy+0), e
+46AD CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46B0         nomoredigits_46B0:          ; ...
+46B0 FD E1       pop     iy              ; ...recall param1
+46B2 FD 73 00        ld      (iy+0), e           ; store uint8_t result at param1
 46B5 18 CE       jr      leave_4685
-46B7         loc_46B7:
-46B7 FD E5       push    iy
+46B7         bcd16bit_46B7:              ; ...
+46B7 FD E5       push    iy              ; remember param1...
 46B9 D5          push    de
-46BA FD E1       pop     iy
+46BA FD E1       pop     iy              ; IY is param2
 46BC 48          ld      c, b
-46BD 06 00       ld      b, 0
-46BF FD 09       add     iy, bc
-46C1 FD 2B       dec     iy
-46C3 FD 7E 00        ld      a, (iy+0)
-46C6 E6 0F       and     0Fh
+46BD 06 00       ld      b, 0            ; BC = param3.h
+46BF FD 09       add     iy, bc          ; BCD source end
+46C1 FD 2B       dec     iy              ; back up to BCD source last
+46C3 FD 7E 00        ld      a, (iy+0)           ; get the first digit
+46C6 E6 0F       and     0Fh             ; ensure nybble
 46C8 5F          ld      e, a
 46C9 16 00       ld      d, 0
 46CB FD 2B       dec     iy
 46CD 0D          dec     c
-46CE 28 1E       jr      z, loc_46EE
+46CE 28 1E       jr      z, nomoredigits_46EE
 46D0 21 0A 00        ld      hl, 10
-46D3 CD F9 46        call    multiplyaccumulate_46F9     ; XXX multiply; DE += HL * A; (dec IY, dec c)
-46D6 28 16       jr      z, loc_46EE
+46D3 CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46D6 28 16       jr      z, nomoredigits_46EE
 46D8 21 64 00        ld      hl, 100
-46DB CD F9 46        call    multiplyaccumulate_46F9     ; XXX multiply; DE += HL * A; (dec IY, dec c)
-46DE 28 0E       jr      z, loc_46EE
+46DB CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46DE 28 0E       jr      z, nomoredigits_46EE
 46E0 21 E8 03        ld      hl, 1000
-46E3 CD F9 46        call    multiplyaccumulate_46F9     ; XXX multiply; DE += HL * A; (dec IY, dec c)
-46E6 28 06       jr      z, loc_46EE
+46E3 CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46E6 28 06       jr      z, nomoredigits_46EE
 46E8 21 10 27        ld      hl, 10000
-46EB CD F9 46        call    multiplyaccumulate_46F9     ; XXX multiply; DE += HL * A; (dec IY, dec c)
-46EE         loc_46EE:
-46EE FD E1       pop     iy
+46EB CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46EE         nomoredigits_46EE:          ; ...
+46EE FD E1       pop     iy              ; ...recall param1
 46F0 FD 72 00        ld      (iy+0), d
-46F3 FD 73 01        ld      (iy+1), e
+46F3 FD 73 01        ld      (iy+1), e           ; store uint16be_t result at param1
 46F6 C3 85 46        jp      leave_4685
 46F6         ; End of function vmop49_4668
 46F9         ; =============== S U B R O U T I N E =======================================
-46F9         ; XXX multiply; DE += HL * A; (dec IY, dec c)
-46F9         multiplyaccumulate_46F9:        ; ...
+46F9         ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46F9         macForBCD_46F9:             ; ...
 46F9 FD 7E 00        ld      a, (iy+0)           ; get BCD digit at position
-46FC E6 0F       and     0Fh             ; ansure nybble
+46FC E6 0F       and     0Fh             ; ensure nybble
 46FE FD 2B       dec     iy              ; back up
-4700 CD 08 47        call    multiply_4708       ; XXX HL *= A
+4700 CD 08 47        call    multiplyForBCD_4708     ; HL *= A
 4703 EB          ex      de, hl
 4704 19          add     hl, de
 4705 EB          ex      de, hl          ; accumulate in DE
 4706 0D          dec     c               ; decrement counter
 4707 C9          ret
-4707         ; End of function multiplyaccumulate_46F9
+4707         ; End of function macForBCD_46F9
 4708         ; =============== S U B R O U T I N E =======================================
-4708         ; XXX HL *= A
-4708         multiply_4708:              ; ...
+4708         ; HL *= A
+4708         multiplyForBCD_4708:            ; ...
 4708 D5          push    de
 4709 11 00 00        ld      de, 0
 470C EB          ex      de, hl
@@ -11510,11 +11510,11 @@
 470E 28 04       jr      z, leave_4714
 4710 19          add     hl, de
 4711 3D          dec     a
-4712 20 F9       jr      nz, loop_470D
+4712 20 F9       jr      nz, loop_470D       ; multiplication by repeated addition
 4714         leave_4714:
 4714 D1          pop     de
 4715 C9          ret
-4715         ; End of function multiply_4708
+4715         ; End of function multiplyForBCD_4708
 4716         ; =============== S U B R O U T I N E =======================================
 4716         ; vmop 4a(4): receive multiple from port; param1 = ptr, param2.h = count, param2.l = port
 4716         vmop4a_4716: 
