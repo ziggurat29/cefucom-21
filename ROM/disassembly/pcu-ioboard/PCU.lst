@@ -10079,7 +10079,7 @@
 408C 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
 408E 77 44       dw vmop46_4477          ; vmop 46(6):
 4090 F4 44       dw vmop47_44F4          ; vmop 47(6):
-4092 89 45       dw vmop48_4589          ; vmop 48(6): some BCD stuff
+4092 89 45       dw vmop48_4589          ; vmop 48(6): 'bin2bcd'; param1 = dest, param2 = bin, param3.h #digits, param3.l = mode (0,2 8bit; 1,3 16bit) zero pad or blank pad
 4094 68 46       dw vmop49_4668          ; vmop 49(6): 'bcd2bin'; BCD to binary; param1 = dest, param2 = bcdbuffer, param3.h = #bcddigits, param3.l = mode (0=8bit,2=16bit)
 4096 16 47       dw vmop4a_4716          ; vmop 4a(4): receive multiple from port; param1 = ptr, param2.h = count, param2.l = port
 4098 1D 47       dw vmop4b_471D          ; vmop 4b(4): send multiple to port; param1 = ptr, param2.h = count, param2.l = port
@@ -11252,123 +11252,123 @@
 4588 C9          ret
 4588         ; End of function vmop47_44F4
 4589         ; =============== S U B R O U T I N E =======================================
-4589         ; vmop 48(6): some BCD stuff
+4589         ; vmop 48(6): 'bin2bcd'; param1 = dest, param2 = bin, param3.h #digits, param3.l = mode (0,2 8bit; 1,3 16bit) zero pad or blank pad
 4589         vmop48_4589: 
-4589 C5          push    bc
-458A FD E5       push    iy
+4589 C5          push    bc              ; save
+458A FD E5       push    iy              ; save
 458C DD 46 00        ld      b, (ix+0)
 458F DD 23       inc     ix
-4591 DD 4E 00        ld      c, (ix+0)
+4591 DD 4E 00        ld      c, (ix+0)           ; BC = param3
 4594 DD 23       inc     ix
 4596 E5          push    hl
-4597 FD E1       pop     iy
+4597 FD E1       pop     iy              ; IY = param1
 4599 78          ld      a, b
 459A FE 00       cp      0
-459C 28 11       jr      z, loc_45AF
+459C 28 11       jr      z, leave_45AF
 459E 79          ld      a, c
 459F FE 00       cp      0
-45A1 28 10       jr      z, loc_45B3
+45A1 28 10       jr      z, modeBytePtr_45B3     ; byte with zero pad
 45A3 FE 01       cp      1
-45A5 28 69       jr      z, loc_4610
+45A5 28 69       jr      z, modeWordPtr_4610     ; word with zero pad
 45A7 FE 02       cp      2
-45A9 28 6D       jr      z, loc_4618
+45A9 28 6D       jr      z, modeBytePtr2_4618    ; byte with blank pad
 45AB FE 03       cp      3
-45AD 28 71       jr      z, loc_4620
-45AF         loc_45AF:
-45AF FD E1       pop     iy
-45B1 C1          pop     bc
+45AD 28 71       jr      z, modeWordPtr2_4620    ; word with blank pad
+45AF         leave_45AF:
+45AF FD E1       pop     iy              ; restore
+45B1 C1          pop     bc              ; restore
 45B2 C9          ret
-45B3         loc_45B3:
+45B3         modeBytePtr_45B3:           ; ...
 45B3 EB          ex      de, hl
 45B4 16 00       ld      d, 0
-45B6 5E          ld      e, (hl)
+45B6 5E          ld      e, (hl)             ; param2 is uint8_t*
 45B7 EB          ex      de, hl
-45B8         loc_45B8:
+45B8         hl2bcd_45B8: 
 45B8 F5          push    af
 45B9 C5          push    bc
-45BA CD 28 46        call    sub_4628            ; XXX HL => decimal (l, h, e, d, a)
+45BA CD 28 46        call    hl2BCD_4628         ; HL => 5 BDC digits: (l, h, e, d, a)
 45BD C1          pop     bc
-45BE 48          ld      c, b            ; field width
+45BE 48          ld      c, b            ; # digits
 45BF 06 00       ld      b, 0
-45C1 FD 09       add     iy, bc
-45C3 FD 2B       dec     iy              ; back up to last char in field
-45C5 41          ld      b, c
-45C6 CD 4C 46        call    stowbcd_464C
-45C9 28 22       jr      z, cont_45ED        ; continue if out of field space...
+45C1 FD 09       add     iy, bc          ; IY at end of dest buffer
+45C3 FD 2B       dec     iy              ; back up to last
+45C5 41          ld      b, c            ; remember the digit count so we can fix padding later
+45C6 CD 4C 46        call    stowbcd_464C        ; stow digit in A
+45C9 28 22       jr      z, doneconversion_45ED  ; we're done if we're out of field space
 45CB 7A          ld      a, d
 45CC CD 4C 46        call    stowbcd_464C
-45CF 28 1C       jr      z, cont_45ED
+45CF 28 1C       jr      z, doneconversion_45ED
 45D1 7B          ld      a, e
 45D2 CD 4C 46        call    stowbcd_464C
-45D5 28 16       jr      z, cont_45ED
+45D5 28 16       jr      z, doneconversion_45ED
 45D7 7C          ld      a, h
 45D8 CD 4C 46        call    stowbcd_464C
-45DB 28 10       jr      z, cont_45ED
+45DB 28 10       jr      z, doneconversion_45ED
 45DD 7D          ld      a, l
 45DE CD 4C 46        call    stowbcd_464C
-45E1 28 0A       jr      z, cont_45ED
+45E1 28 0A       jr      z, doneconversion_45ED
 45E3 3E 30       ld      a, '0'                      ; zero pad rest of field
 45E5         loop_45E5:              ; ...
-45E5 FD 77 00        ld      (iy+0), a
+45E5 FD 77 00        ld      (iy+0), a           ; do padding
 45E8 FD 2B       dec     iy
 45EA 0D          dec     c
 45EB 20 F8       jr      nz, loop_45E5
-45ED         cont_45ED:              ; ...
+45ED         doneconversion_45ED:            ; ...
 45ED F1          pop     af
 45EE FE 02       cp      2
-45F0 28 06       jr      z, loc_45F8
+45F0 28 06       jr      z, blankpad_45F8
 45F2 FE 03       cp      3
-45F4 28 02       jr      z, loc_45F8
-45F6 18 B7       jr      loc_45AF
-45F8         loc_45F8:
-45F8 FD 23       inc     iy
-45FA         loc_45FA:
-45FA FD 7E 00        ld      a, (iy+0)
+45F4 28 02       jr      z, blankpad_45F8
+45F6 18 B7       jr      leave_45AF
+45F8         blankpad_45F8:              ; ...
+45F8 FD 23       inc     iy              ; get IY back at start; then we just convert leading '0' to space
+45FA         loop_45FA:              ; ...
+45FA FD 7E 00        ld      a, (iy+0)           ; check for '0' and convert to space until not '0' or out of chars
 45FD FE 30       cp      '0'
-45FF 20 0C       jr      nz, loc_460D
+45FF 20 0C       jr      nz, exitloop_460D
 4601 05          dec     b
-4602 28 09       jr      z, loc_460D
+4602 28 09       jr      z, exitloop_460D
 4604 3E 20       ld      a, ' '
 4606 FD 77 00        ld      (iy+0), a
 4609 FD 23       inc     iy
-460B 18 ED       jr      loc_45FA
-460D         loc_460D:
-460D C3 AF 45        jp      loc_45AF
-4610         loc_4610:
+460B 18 ED       jr      loop_45FA
+460D         exitloop_460D:              ; ...
+460D C3 AF 45        jp      leave_45AF
+4610         modeWordPtr_4610:           ; ...
 4610 EB          ex      de, hl
 4611 56          ld      d, (hl)
 4612 23          inc     hl
-4613 5E          ld      e, (hl)
+4613 5E          ld      e, (hl)             ; param2 is uint16b8_t*
 4614 EB          ex      de, hl
-4615 C3 B8 45        jp      loc_45B8
-4618         loc_4618:
+4615 C3 B8 45        jp      hl2bcd_45B8
+4618         modeBytePtr2_4618:          ; ...
 4618 EB          ex      de, hl
 4619 16 00       ld      d, 0
-461B 5E          ld      e, (hl)
+461B 5E          ld      e, (hl)             ; param2 is uint16b8_t*
 461C EB          ex      de, hl
-461D C3 B8 45        jp      loc_45B8
-4620         loc_4620:
+461D C3 B8 45        jp      hl2bcd_45B8
+4620         modeWordPtr2_4620:          ; ...
 4620 EB          ex      de, hl
 4621 56          ld      d, (hl)
 4622 23          inc     hl
-4623 5E          ld      e, (hl)
+4623 5E          ld      e, (hl)             ; param2 is uint16b8_t*
 4624 EB          ex      de, hl
-4625 C3 B8 45        jp      loc_45B8
+4625 C3 B8 45        jp      hl2bcd_45B8
 4625         ; End of function vmop48_4589
 4628         ; =============== S U B R O U T I N E =======================================
-4628         ; XXX HL => decimal (l, h, e, d, a)
-4628         sub_4628:
+4628         ; HL => 5 BDC digits: (l, h, e, d, a)
+4628         hl2BCD_4628: 
 4628 11 10 27        ld      de, 10000
-462B CD 57 46        call    divide_4657         ; XXX HL / DE => DE q, HL rem
+462B CD 57 46        call    divideForBCD_4657       ; HL / DE => DE q, HL rem
 462E D5          push    de
 462F 11 E8 03        ld      de, 1000
-4632 CD 57 46        call    divide_4657         ; XXX HL / DE => DE q, HL rem
+4632 CD 57 46        call    divideForBCD_4657       ; HL / DE => DE q, HL rem
 4635 D5          push    de
 4636 11 64 00        ld      de, 100
-4639 CD 57 46        call    divide_4657         ; XXX HL / DE => DE q, HL rem
+4639 CD 57 46        call    divideForBCD_4657       ; HL / DE => DE q, HL rem
 463C D5          push    de
 463D 11 0A 00        ld      de, 10
-4640 CD 57 46        call    divide_4657         ; XXX HL / DE => DE q, HL rem
+4640 CD 57 46        call    divideForBCD_4657       ; HL / DE => DE q, HL rem
 4643 7D          ld      a, l            ; ones
 4644 53          ld      d, e            ; tens
 4645 C1          pop     bc
@@ -11378,7 +11378,7 @@
 4649 C1          pop     bc
 464A 69          ld      l, c            ; ten thousands
 464B C9          ret
-464B         ; End of function sub_4628
+464B         ; End of function hl2BCD_4628
 464C         ; =============== S U B R O U T I N E =======================================
 464C         ; stow BCD in A to (IY); --iy, --c
 464C         stowbcd_464C:
@@ -11390,8 +11390,8 @@
 4656 C9          ret
 4656         ; End of function stowbcd_464C
 4657         ; =============== S U B R O U T I N E =======================================
-4657         ; XXX HL / DE => DE q, HL rem
-4657         divide_4657: 
+4657         ; HL / DE => DE q, HL rem
+4657         divideForBCD_4657:          ; ...
 4657 C5          push    bc              ; save
 4658 01 00 00        ld      bc, 0
 465B         loop_465B:              ; ...
@@ -11406,7 +11406,7 @@
 4665 59          ld      e, c
 4666 C1          pop     bc              ; restore
 4667 C9          ret
-4667         ; End of function divide_4657
+4667         ; End of function divideForBCD_4657
 4668         ; =============== S U B R O U T I N E =======================================
 4668         ; vmop 49(6): 'bcd2bin'; BCD to binary; param1 = dest, param2 = bcdbuffer, param3.h = #bcddigits, param3.l = mode (0=8bit,2=16bit)
 4668         vmop49_4668: 
@@ -11446,10 +11446,10 @@
 469F 0D          dec     c
 46A0 28 0E       jr      z, nomoredigits_46B0
 46A2 21 0A 00        ld      hl, 10
-46A5 CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46A5 CD F9 46        call    macForBCD_46F9      ; multiply-accumulate; DE += HL * (dig@iy); (dec IY, dec c)
 46A8 28 06       jr      z, nomoredigits_46B0
 46AA 21 64 00        ld      hl, 100
-46AD CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46AD CD F9 46        call    macForBCD_46F9      ; multiply-accumulate; DE += HL * (dig@iy); (dec IY, dec c)
 46B0         nomoredigits_46B0:          ; ...
 46B0 FD E1       pop     iy              ; ...recall param1
 46B2 FD 73 00        ld      (iy+0), e           ; store uint8_t result at param1
@@ -11470,16 +11470,16 @@
 46CD 0D          dec     c
 46CE 28 1E       jr      z, nomoredigits_46EE
 46D0 21 0A 00        ld      hl, 10
-46D3 CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46D3 CD F9 46        call    macForBCD_46F9      ; multiply-accumulate; DE += HL * (dig@iy); (dec IY, dec c)
 46D6 28 16       jr      z, nomoredigits_46EE
 46D8 21 64 00        ld      hl, 100
-46DB CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46DB CD F9 46        call    macForBCD_46F9      ; multiply-accumulate; DE += HL * (dig@iy); (dec IY, dec c)
 46DE 28 0E       jr      z, nomoredigits_46EE
 46E0 21 E8 03        ld      hl, 1000
-46E3 CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46E3 CD F9 46        call    macForBCD_46F9      ; multiply-accumulate; DE += HL * (dig@iy); (dec IY, dec c)
 46E6 28 06       jr      z, nomoredigits_46EE
 46E8 21 10 27        ld      hl, 10000
-46EB CD F9 46        call    macForBCD_46F9      ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46EB CD F9 46        call    macForBCD_46F9      ; multiply-accumulate; DE += HL * (dig@iy); (dec IY, dec c)
 46EE         nomoredigits_46EE:          ; ...
 46EE FD E1       pop     iy              ; ...recall param1
 46F0 FD 72 00        ld      (iy+0), d
@@ -11487,7 +11487,7 @@
 46F6 C3 85 46        jp      leave_4685
 46F6         ; End of function vmop49_4668
 46F9         ; =============== S U B R O U T I N E =======================================
-46F9         ; XXX multiply; DE += HL * (dig@iy); (dec IY, dec c)
+46F9         ; multiply-accumulate; DE += HL * (dig@iy); (dec IY, dec c)
 46F9         macForBCD_46F9:             ; ...
 46F9 FD 7E 00        ld      a, (iy+0)           ; get BCD digit at position
 46FC E6 0F       and     0Fh             ; ensure nybble
