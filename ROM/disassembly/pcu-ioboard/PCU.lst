@@ -4967,13 +4967,13 @@
 1F06         loc_1F06:
 1F06 3A 76 C3        ld      a, (byte_C376)
 1F09 32 7F C0        ld      (byte_C07F), a
-1F0C 2A 4E C3        ld      hl, (word_C34E)
+1F0C 2A 4E C3        ld      hl, (word_C34E)         ; XXX ptr to a rst 10 program
 1F0F AF          xor     a
 1F10 B4          or      h
 1F11 B5          or      l
-1F12 28 03       jr      z, loc_1F17
+1F12 28 03       jr      z, cont_1F17
 1F14 CD 23 41        call    impl_rst10_4123         ; run VM program
-1F17         loc_1F17:
+1F17         cont_1F17:              ; ...
 1F17 AF          xor     a
 1F18 32 40 C3        ld      (byte_C340), a
 1F1B C9          ret
@@ -10072,13 +10072,13 @@
 407E EA 43       dw vmop3e_43EA          ; vmop 3e(2): 'run'; execute (rst 10) @ param1
 4080 FD 43       dw vmop3f_43FD          ; vmop 3f(2): 'usr'; invoke assembly @ param1
 4082 03 44       dw vmop40_4403          ; vmop 40(4): 'computed goto'; *(unit8_t*)param2 indexes (1-relative) into length-prefixed array of pointers @ param1; goto
-4084 1C 44       dw vmop41_441C          ; vmop 41(4): XXX run rst8 block via length-prefixed table at param1 indexed *param2 (1-relative)
+4084 1C 44       dw vmop41_441C          ; vmop 41(4): XXX dispatch rst8 via length-prefixed table at param1 indexed *param2 (1-relative)
 4086 3D 44       dw vmop42_443D          ; vmop 42(4): XXX run rst10 program via length-prefixed table at param1 indexed *param2 (1-relative) (entries BE)
 4088 F2 43       dw vmop43_43F2          ; vmop 43(2): 'run_le'; execute (rst 10) @ param1 (LE)
 408A 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
 408C 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
-408E 77 44       dw vmop46_4477          ; vmop 46(6):
-4090 F4 44       dw vmop47_44F4          ; vmop 47(6):
+408E 77 44       dw vmop46_4477          ; XXX vmop 46(6):
+4090 F4 44       dw vmop47_44F4          ; XXX vmop 47(6):
 4092 89 45       dw vmop48_4589          ; vmop 48(6): 'bin2bcd'; param1 = dest, param2 = bin, param3.h #digits, param3.l = mode (0,2 8bit; 1,3 16bit) zero pad or blank pad
 4094 68 46       dw vmop49_4668          ; vmop 49(6): 'bcd2bin'; BCD to binary; param1 = dest, param2 = bcdbuffer, param3.h = #bcddigits, param3.l = mode (0=8bit,2=16bit)
 4096 16 47       dw vmop4a_4716          ; vmop 4a(4): receive multiple from port; param1 = ptr, param2.h = count, param2.l = port
@@ -10097,8 +10097,8 @@
 40B0 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
 40B2 9E 41       dw vmop00_end_419E          ; vmop58
 40B4 9E 41       dw vmop00_end_419E          ; vmop 00(0): END
-40B6 03 48       dw vmop5a_4803          ; vmop 5a(4):
-40B8 7F 48       dw vmop5b_487F          ; vmop 5b(4):
+40B6 03 48       dw vmop5a_4803          ; XXX vmop 5a(4):  param1 ; param2.h = mode 0, 1, 2, 3
+40B8 7F 48       dw vmop5b_487F          ; XXX vmop 5b(4): setup unk_ C130 entry; param1=source 3-bytes (and rest), param2.h=index, param2.l=???
 40BA AD 48       dw vmop5c_48AD          ; vmop 5c(4):
 40BC ED 48       dw vmop5d_48ED          ; vmop 5d(4):
 40BE 24 47       dw vmop5e_4724          ; vmop 5e(4):
@@ -10149,7 +10149,7 @@
 4128         loop_4128:              ; ...
 4128 DD 7E 00        ld      a, (ix+0)           ; get function code
 412B A7          and     a
-412C 28 32       jr      z, leave_4160       ; fxn00 terminates block sequence
+412C 28 32       jr      z, leave_4160       ; vmop00 terminates block sequence
 412E FE 7B       cp      7Bh             ; 123 and above handled specially
 4130 30 05       jr      nc, bogoops_4137
 4132 CD 67 41        call    impl_rst8_4167      ; process VM op block @ IX
@@ -10185,8 +10185,8 @@
 415E 18 C8       jr      loop_4128
 4160         leave_4160:
 4160 DD E5       push    ix
-4162 E1          pop     hl
-4163 23          inc     hl
+4162 E1          pop     hl              ; update HL to the end of program
+4163 23          inc     hl              ; and advance past that terminating op
 4164 DD E1       pop     ix              ; restore IX
 4166 C9          ret
 4166         ; End of function impl_rst10_4123
@@ -10975,7 +10975,7 @@
 441B C9          ret
 441B         ; End of function vmop40_4403
 441C         ; =============== S U B R O U T I N E =======================================
-441C         ; vmop 41(4): XXX run rst8 block via length-prefixed table at param1 indexed *param2 (1-relative)
+441C         ; vmop 41(4): XXX dispatch rst8 via length-prefixed table at param1 indexed *param2 (1-relative)
 441C         vmop41_441C: 
 441C 1A          ld      a, (de)
 441D FE 00       cp      0
@@ -11062,7 +11062,7 @@
 4476 C9          ret
 4476         ; End of function helperTestBflagsAsC_446E
 4477         ; =============== S U B R O U T I N E =======================================
-4477         ; vmop 46(6):
+4477         ; XXX vmop 46(6):
 4477         vmop46_4477: 
 4477 C5          push    bc              ; save
 4478 DD 46 00        ld      b, (ix+0)
@@ -11150,13 +11150,13 @@
 44F3 C9          ret
 44F3         ; End of function vmop46_4477
 44F4         ; =============== S U B R O U T I N E =======================================
-44F4         ; vmop 47(6):
+44F4         ; XXX vmop 47(6):
 44F4         vmop47_44F4: 
 44F4 C5          push    bc
 44F5 DD 46 00        ld      b, (ix+0)
 44F8 DD 23       inc     ix
 44FA DD 4E 00        ld      c, (ix+0)
-44FD DD 23       inc     ix
+44FD DD 23       inc     ix              ; BC = param3.h.l
 44FF FD E5       push    iy
 4501 E5          push    hl
 4502 FD E1       pop     iy
@@ -11747,42 +11747,43 @@
 4801 01          db    1                 ; XXX (this keeps showing up)
 4802 05          db    5
 4803         ; =============== S U B R O U T I N E =======================================
-4803         ; vmop 5a(4):
+4803         ; XXX vmop 5a(4):  param1 ; param2.h = mode 0, 1, 2, 3
 4803         vmop5a_4803: 
 4803 C5          push    bc
 4804 44          ld      b, h
-4805 4D          ld      c, l
-4806 7A          ld      a, d
+4805 4D          ld      c, l            ; BC has param1
+4806 7A          ld      a, d            ; a has param2.h
 4807 B7          or      a
-4808 28 12       jr      z, loc_481C
+4808 28 12       jr      z, fxn0_481C
 480A FE 01       cp      1
-480C 28 13       jr      z, loc_4821
+480C 28 13       jr      z, fxn1_4821
 480E FE 02       cp      2
-4810 28 14       jr      z, loc_4826
+4810 28 14       jr      z, fxn2_4826
 4812 FE 03       cp      3
-4814 28 15       jr      z, loc_482B
+4814 28 15       jr      z, fxn3_482B
 4816 FE 04       cp      4
-4818 28 16       jr      z, loc_4830
-481A 18 17       jr      loc_4833
-481C         loc_481C:
-481C CD 35 48        call    sub_4835
-481F 18 12       jr      loc_4833
-4821         loc_4821:
-4821 CD 47 48        call    sub_4847
-4824 18 0D       jr      loc_4833
-4826         loc_4826:
-4826 CD 52 48        call    sub_4852
-4829 18 08       jr      loc_4833
-482B         loc_482B:
-482B CD 5C 48        call    sub_485C
-482E 18 03       jr      loc_4833
-4830         loc_4830:
+4818 28 16       jr      z, fxn4_4830
+481A 18 17       jr      leave_4833
+481C         fxn0_481C:              ; ...
+481C CD 35 48        call    sub_4835            ; XXX vmop5a fxn 0
+481F 18 12       jr      leave_4833
+4821         fxn1_4821:              ; ...
+4821 CD 47 48        call    sub_4847            ; XXX vmop5a fxn 1
+4824 18 0D       jr      leave_4833
+4826         fxn2_4826:              ; ...
+4826 CD 52 48        call    sub_4852            ; XXX vmop5a fxn 2
+4829 18 08       jr      leave_4833
+482B         fxn3_482B:              ; ...
+482B CD 5C 48        call    sub_485C            ; XXX vmop5a fxn 3
+482E 18 03       jr      leave_4833
+4830         fxn4_4830:              ; ...
 4830 CD 66 48        call    sub_4866
-4833         loc_4833:
+4833         leave_4833:
 4833 C1          pop     bc
 4834 C9          ret
 4834         ; End of function vmop5a_4803
 4835         ; =============== S U B R O U T I N E =======================================
+4835         ; XXX vmop5a fxn 0
 4835         sub_4835:
 4835 7B          ld      a, e
 4835         ; End of function sub_4835
@@ -11802,16 +11803,18 @@
 4846 C9          ret
 4846         ; End of function sub_4836
 4847         ; =============== S U B R O U T I N E =======================================
+4847         ; XXX vmop5a fxn 1
 4847         sub_4847:
 4847 3E 02       ld      a, 2
-4849         loc_4849:
+4849         loop_4849:              ; ...
 4849 CD 36 48        call    sub_4836
 484C 3C          inc     a
 484D FE 0D       cp      0Dh
-484F 20 F8       jr      nz, loc_4849
+484F 20 F8       jr      nz, loop_4849
 4851 C9          ret
 4851         ; End of function sub_4847
 4852         ; =============== S U B R O U T I N E =======================================
+4852         ; XXX vmop5a fxn 2
 4852         sub_4852:
 4852 7B          ld      a, e
 4852         ; End of function sub_4852
@@ -11824,6 +11827,7 @@
 485B C9          ret
 485B         ; End of function sub_4853
 485C         ; =============== S U B R O U T I N E =======================================
+485C         ; XXX vmop5a fxn 3
 485C         sub_485C:
 485C 7B          ld      a, e
 485D FE 0D       cp      0Dh
@@ -11856,39 +11860,39 @@
 487E C9          ret
 487E         ; End of function sub_4871
 487F         ; =============== S U B R O U T I N E =======================================
-487F         ; vmop 5b(4):
+487F         ; XXX vmop 5b(4): setup unk_ C130 entry; param1=source 3-bytes (and rest), param2.h=index, param2.l=???
 487F         vmop5b_487F: 
 487F C5          push    bc
 4880 E5          push    hl
-4881 21 30 C1        ld      hl, unk_C130
-4884 7A          ld      a, d
-4885 FE 11       cp      11h
-4887 30 21       jr      nc, loc_48AA
+4881 21 30 C1        ld      hl, unk_C130        ; XXX array of 17 8-byte structures?
+4884 7A          ld      a, d            ; param2.h index (0-relative?)
+4885 FE 11       cp      17
+4887 30 21       jr      nc, leave_48AA      ; out of bounds
 4889 CB 27       sla     a
 488B CB 27       sla     a
-488D CB 27       sla     a
+488D CB 27       sla     a               ; index *= 8
 488F 4F          ld      c, a
 4890 06 00       ld      b, 0
-4892 09          add     hl, bc
-4893 36 00       ld      (hl), 0
-4895 7B          ld      a, e
+4892 09          add     hl, bc          ; HL = structure base address
+4893 36 00       ld      (hl), 0             ; clear @+0
+4895 7B          ld      a, e            ; param2.l
 4896 FE 0D       cp      0Dh
-4898 30 10       jr      nc, loc_48AA
+4898 30 10       jr      nc, leave_48AA      ; XXX hmm; 0-12 only
 489A D1          pop     de
-489B D5          push    de
-489C E5          push    hl
-489D 23          inc     hl
-489E EB          ex      de, hl
-489F 01 03 00        ld      bc, 3
-48A2 ED B0       ldir
-48A4 EB          ex      de, hl
+489B D5          push    de              ; param1 source ptr
+489C E5          push    hl              ; structure base
+489D 23          inc     hl              ; hl @+1
+489E EB          ex      de, hl          ; hl = param1 source ptr, de @+1
+489F 01 03 00        ld      bc, 3           ; 3 bytes
+48A2 ED B0       ldir                ; put them in there
+48A4 EB          ex      de, hl          ; HL in dest @+4, DE source + 3
 48A5 72          ld      (hl), d
 48A6 23          inc     hl
-48A7 73          ld      (hl), e
-48A8 E1          pop     hl
-48A9 77          ld      (hl), a
-48AA         loc_48AA:
-48AA E1          pop     hl
+48A7 73          ld      (hl), e             ; source ptr + 3 => dest + 4
+48A8 E1          pop     hl              ; structure base
+48A9 77          ld      (hl), a             ; @+0 = param2.l
+48AA         leave_48AA:
+48AA E1          pop     hl              ; back to param1, for what it's worth
 48AB C1          pop     bc
 48AC C9          ret
 48AC         ; End of function vmop5b_487F
@@ -12793,7 +12797,7 @@
 4E4F 3A 70 C0        ld      a, (byte_C070)
 4E52 FE 2D       cp      45
 4E54 D2 A7 53        jp      nc, sub_53A7        ; A >= 45; too high
-4E57 CD 05 59        call    sub_5905            ; thunk via subsequent table through A
+4E57 CD 05 59        call    doMagicDispatch_5905    ; dispatch (not call) by A with subsequent table
 4E57         ; End of function sub_4E4F
 4E5A B4 4E   dispatch_4E5A:dw sub_4EB4
 4E5C CC 4E       dw sub_4ECC
@@ -12843,20 +12847,21 @@
 4EB4         ; =============== S U B R O U T I N E =======================================
 4EB4         sub_4EB4:
 4EB4 CD 1C 59        call    loc_591C
-4EB7 21 00 C8        ld      hl, unk_C800
-4EBA 11 01 C8        ld      de, 0C801h
+4EB7 21 00 C8        ld      hl, unk_C800        ; XXX 2 KiB cleared with spaces
+4EBA 11 01 C8        ld      de, unk_C800 + 1        ; XXX 2 KiB cleared with spaces
 4EBD 36 20       ld      (hl), ' '
 4EBF 01 FF 07        ld      bc, 7FFh
-4EC2 ED B0       ldir
+4EC2 ED B0       ldir                ; clear with spaces
 4EC4 3E 02       ld      a, 2
 4EC6 32 88 C0        ld      (byte_C088), a
 4EC9 C3 E2 58        jp      sub_58E2
 4EC9         ; End of function sub_4EB4
 4ECC         ; =============== S U B R O U T I N E =======================================
+4ECC         ; Attributes: noreturn thunk
 4ECC         sub_4ECC:
-4ECC CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+4ECC CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 4ECC         ; End of function sub_4ECC
-4ECF 0C      witchcraft:db  0Ch
+4ECF 0C      witchcraft_4ECF:db  0Ch
 4ED0 0A          db  0Ah
 4ED1 D7          db 0D7h ; ◊
 4ED2 4E          db  4Eh ; N
@@ -12892,7 +12897,7 @@
 4EF9 67          ld      h, a
 4EFA FE 90       cp      90h ; 'ê'
 4EFC 38 EB       jr      c, loop_4EE9
-4EFE CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+4EFE CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 4EFE         ; End of function sub_4EE1
 4F01 05          db    5
 4F02 0A          db  0Ah
@@ -13129,7 +13134,7 @@
 5010         sub_5010:
 5010 3A AE C0        ld      a, (byte_C0AE)
 5013 F6 30       or      '0'
-5015 21 00 C8        ld      hl, unk_C800
+5015 21 00 C8        ld      hl, unk_C800        ; XXX 2 KiB cleared with spaces
 5018 77          ld      (hl), a
 5019 23          inc     hl
 501A 3E 20       ld      a, ' '
@@ -13156,7 +13161,7 @@
 5040 21 F4 51        ld      hl, byte_51F4
 5043 CD 23 41        call    impl_rst10_4123         ; run VM program
 5046         loc_5046:
-5046 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+5046 CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 5046         ; End of function sub_5010
 5049 07          db    7
 504A 02          db    2
@@ -13454,7 +13459,7 @@
 5170 3D          dec     a
 5171 20 06       jr      nz, loc_5179
 5173 06 CE       ld      b, 0CEh ; 'Œ'
-5175 CD 56 5A        call    sub_5A56
+5175 CD 56 5A        call    witchspell01_5A56       ; XXX 1; also C0 and above; do things with table off_ 5B5D
 5178 C9          ret
 5179         loc_5179:
 5179 11 2C C8        ld      de, 0C82Ch
@@ -13478,31 +13483,30 @@
 519A 30 FB       jr      nc, loc_5197
 519C         loc_519C:
 519C 61          ld      h, c
-519D 68          ld      l, b
-519E 22 04 81        ld      (word_8104), hl
+519D 68          ld      l, b            ; presto-swapp big-endian
+519E 22 04 81        ld      (word_8104), hl         ; XXX big-endian
 51A1 D1          pop     de
-51A2 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
-51A2         ; End of function sub_5168
-51A5 02          db 2                ; vmop02_41AE
-51A6 20          db  20h
-51A7 C8          db 0C8h ; »
-51A8 D1          db 0D1h ; —
-51A9 03          db    3
-51AA 48          db 48h              ; vmop48_4589
-51AB C8 25       dw 25C8h
-51AD 81 04       dw 481h
-51AF 04 03       dw 304h
+51A2 CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
+51A5 02          db 2                ; witchspell02_ 5A6C load DE
+51A6 20 C8       dw unk_C820             ; ... with this value
+51A8 D1          db 0D1h                 ; witchspell01_ 5A56, embedded param 11h XXX off_ 5B5D entry 17
+51A9 03          db 3                ; witchspell03_ 5A71 run RST10 program
+51AA 48          db 48h              ; vmop48_4589 - 'bin2bcd'
+51AB C8 25       dw 25C8h                ; c825 - dest buffer
+51AD 81 04       dw 481h                 ; 8104 - uint16be_t* value
+51AF 04 03       dw 304h                 ; 0403 - 4 digits, blank pad
 51B1 03          db 3                ; vmop03_41B1
-51B2 C8 29       dw 29C8h
-51B4 14 37       dw 3714h
+51B2 C8 29       dw 29C8h                ; c829
+51B4 14 37       dw 3714h                ; 1437
 51B6 00          db 0                ; vmop00_end_419E
-51B7 00          db    0
-51B8 C9          db 0C9h ; …
+51B7 00          db 0                ; witchspell00_ 5A52 end incantation and thunk to HL (which is next byte)
+51B8 C9          ret
+51B8         ; End of function sub_5168
 51B9 48      byte_51B9:db 48h            ; ...
 51B9                             ; vmop48_4589
-51BA C8 60       dw 60C8h                ; c860
-51BC C5 03       dw 3C5h
-51BE 03 02       dw 203h
+51BA C8 60       dw 60C8h                ; c860 - dest buffer
+51BC C5 03       dw 3C5h                 ; c503 - uint8_t* value
+51BE 03 02       dw 203h                 ; 0302 - 3 digits, blank pad
 51C0 02          db 2                ; vmop02_41AE
 51C1 C8 63       dw 63C8h
 51C3 C5 04       dw 4C5h
@@ -13510,9 +13514,9 @@
 51C6 C8 63       dw 63C8h
 51C8 00 41       dw 4100h
 51CA 48          db 48h              ; vmop48_4589
-51CB C8 64       dw 64C8h                ; c846
-51CD C5 05       dw 5C5h
-51CF 03 02       dw 203h
+51CB C8 64       dw 64C8h                ; c846 - dest buffer
+51CD C5 05       dw 5C5h                 ; c505 - uint8_t* value
+51CF 03 02       dw 203h                 ; 0302 - 3 digits, blank pad
 51D1 47          db 47h              ; vmop47_44F4
 51D2 C8 04       dw 4C8h
 51D4 C5 21       dw 21C5h
@@ -13538,7 +13542,7 @@
 51F4                             ; vmop48_4589
 51F5 C8 10       dw 10C8h                ; c810
 51F7 C8 F0       dw 0F0C8h               ; c8f0
-51F9 06 03       dw 306h                 ; 0603
+51F9 06 03       dw 306h                 ; 0603b - six digits, blank pad
 51FB 03          db 3                ; vmop03_41B1
 51FC C8 16       dw 16C8h                ; c816
 51FE 14 37       dw 3714h                ; 1437
@@ -13576,7 +13580,7 @@
 522C 3E 02       ld      a, 2
 522E C3 E9 58        jp      sub_58E9
 5231         loc_5231:
-5231 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+5231 CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 5234 02          db    2
 5235 80          db  80h ; Ä
 5236 C8          db 0C8h ; »
@@ -13621,7 +13625,7 @@
 5265 F6 30       or      30h ; '0'
 5267 32 5F C8        ld      (byte_C85F), a
 526A 32 55 C8        ld      (byte_C855), a
-526D CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+526D CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 526D         ; End of function sub_525A
 5270 02          db    2
 5271 50          db  50h ; P
@@ -13729,7 +13733,7 @@
 52E3 3E 0C       ld      a, 0Ch
 52E5         loc_52E5:
 52E5 77          ld      (hl), a
-52E6 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+52E6 CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 52E9 0C          db  0Ch
 52EA 1E          db  1Eh
 52EB 9C          db  9Ch ; ú
@@ -13772,7 +13776,7 @@
 5327         loc_5327:
 5327 01 00 01        ld      bc, 256
 532A ED B0       ldir
-532C CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+532C CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 532C         ; End of function sub_531A
 532F 0C          db  0Ch
 5330 1D          db  1Dh
@@ -13794,7 +13798,7 @@
 5340 B5          db 0B5h ; µ
 5341 20          db  20h
 5342 08          db    8
-5343 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+5343 CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 5346 0C          db  0Ch
 5347 0E          db  0Eh
 5348 71          db  71h ; q
@@ -13882,11 +13886,7 @@
 53A2 3E 10       ld      a, 10h
 53A4 C3 E9 58        jp      sub_58E9
 53A4         ; End of function sub_5394
-53A7         ; =============== S U B R O U T I N E =======================================
-53A7         ; XXX do something funky
-53A7         sub_53A7:
-53A7 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
-53A7         ; End of function sub_53A7
+53A7         ; [00000003 BYTES: COLLAPSED FUNCTION sub_53A7. PRESS KEYPAD CTRL-"+" TO EXPAND]
 53AA 0C          db  0Ch                 ; XXX might be witchcraft
 53AB 02          db    2
 53AC 54          db  54h ; T
@@ -14256,7 +14256,7 @@
 55F1 3E 11       ld      a, 11h
 55F3 32 5F C8        ld      (byte_C85F), a
 55F6 CD A4 56        call    sub_56A4
-55F9 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+55F9 CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 55F9         ; End of function sub_55F1
 55FC 02          db    2
 55FD 80          db  80h ; Ä
@@ -14318,7 +14318,7 @@
 563A CD A4 56        call    sub_56A4
 563D 3E 02       ld      a, 2
 563F 32 88 C0        ld      (byte_C088), a
-5642 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+5642 CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 5642         ; End of function sub_5630
 5645 02          db    2
 5646 80          db  80h ; Ä
@@ -14339,7 +14339,7 @@
 565C 28 02       jr      z, loc_5660
 565E 06 CA       ld      b, 0CAh ; ' '
 5660         loc_5660:
-5660 CD 56 5A        call    sub_5A56
+5660 CD 56 5A        call    witchspell01_5A56       ; XXX 1; also C0 and above; do things with table off_ 5B5D
 5663 11 69 C8        ld      de, 0C869h
 5666 CD 8E 59        call    sub_598E
 5669 21 AB C4        ld      hl, 0C4ABh
@@ -14363,7 +14363,7 @@
 568A 21 7D C0        ld      hl, 0C07Dh
 568D 35          dec     (hl)
 568E C0          ret     nz
-568F CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+568F CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 568F         ; End of function sub_568A
 5692 0C          db  0Ch
 5693 0A          db  0Ah
@@ -14392,7 +14392,7 @@
 56B2         sub_56B2:
 56B2 11 00 CA        ld      de, unk_CA00
 56B5 21 C9 57        ld      hl, unk_57C9
-56B8 CD 19 5A        call    sub_5A19            ; XXX witchcraft; will ultimately provide a jump address
+56B8 CD 19 5A        call    witchcraft_01_5A19      ; witchcraft01; must ultimately provide a jump address in HL
 56BB 3E 0A       ld      a, 0Ah
 56BD 32 88 C0        ld      (byte_C088), a
 56C0 CD FE 58        call    sub_58FE
@@ -14415,7 +14415,7 @@
 56DE         loc_56DE:
 56DE FE 07       cp      7
 56E0 C0          ret     nz
-56E1 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+56E1 CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 56E1         ; End of function sub_56C6
 56E4 0C          db  0Ch
 56E5 05          db    5
@@ -14489,7 +14489,7 @@
 573D 32 81 C0        ld      (byte_C081), a
 5740 21 FA 57        ld      hl, byte_57FA       ; XXX a RST 10 list
 5743 CD 23 41        call    impl_rst10_4123         ; run VM program
-5746 CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+5746 CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 5746         ; End of function sub_573B
 5749 02          db    2
 574A 00          db    0
@@ -14585,7 +14585,7 @@
 57A5 36 00       ld      (hl), 0
 57A7 FE 0D       cp      0Dh
 57A9 C0          ret     nz
-57AA CD 14 5A        call    sub_5A14            ; XXX witchcraft; subsequent table
+57AA CD 14 5A        call    witchcraft_00_5A14      ; witchcraft00; process subsequent data block
 57AA         ; End of function sub_579F
 57AD 0C          db  0Ch
 57AE 05          db    5
@@ -14923,17 +14923,17 @@
 5904 C9          ret
 5904         ; End of function sub_58FE
 5905         ; =============== S U B R O U T I N E =======================================
-5905         ; thunk via subsequent table through A
+5905         ; dispatch (not call) by A with subsequent table
 5905         ; Attributes: noreturn
-5905         sub_5905:
+5905         doMagicDispatch_5905:           ; ...
 5905 E3          ex      (sp), hl            ; HL now has the table address (which followed the call site)
-5906 CD 0B 59        call    sub_590B            ; HL = ((uint16_t*)HL) [A]
-5909 E3          ex      (sp), hl
+5906 CD 0B 59        call    getWordByIndex_590B     ; HL = ((uint16_t*)HL) [A]
+5909 E3          ex      (sp), hl            ; restores HL; sets up thunk address
 590A C9          ret                 ; effectively a jump
-590A         ; End of function sub_5905
+590A         ; End of function doMagicDispatch_5905
 590B         ; =============== S U B R O U T I N E =======================================
 590B         ; HL = ((uint16_t*)HL) [A]
-590B         sub_590B:
+590B         getWordByIndex_590B:            ; ...
 590B CB 27       sla     a               ; index *= 2
 590D 85          add     a, l
 590E 6F          ld      l, a
@@ -14945,7 +14945,7 @@
 5915 66          ld      h, (hl)
 5916 6F          ld      l, a            ; get content
 5917 C9          ret
-5917         ; End of function sub_590B
+5917         ; End of function getWordByIndex_590B
 5918         ; =============== S U B R O U T I N E =======================================
 5918         sub_5918:
 5918 AF          xor     a
@@ -15025,7 +15025,7 @@
 5978 BE          cp      (hl)
 5979 D0          ret     nc              ; do not party out of bounds
 597A 23          inc     hl              ; past length
-597B CD 0B 59        call    sub_590B            ; HL = ((uint16_t*)HL) [A]
+597B CD 0B 59        call    getWordByIndex_590B     ; HL = ((uint16_t*)HL) [A]
 597E 7C          ld      a, h            ; presto-swappo big-endian
 597F 65          ld      h, l
 5980 6F          ld      l, a
@@ -15151,69 +15151,70 @@
 5A13 C9          ret
 5A13         ; End of function sub_59AF
 5A14         ; =============== S U B R O U T I N E =======================================
-5A14         ; XXX witchcraft; subsequent table
+5A14         ; witchcraft00; process subsequent data block
 5A14         ; Attributes: noreturn
-5A14         sub_5A14:
-5A14 E1          pop     hl
-5A15 CD 19 5A        call    sub_5A19            ; XXX witchcraft; will ultimately provide a jump address
-5A18 E9          jp      (hl)
-5A18         ; End of function sub_5A14
+5A14         witchcraft_00_5A14:             ; ...
+5A14 E1          pop     hl              ; get subsequent data block address; we won't be returning there!
+5A15 CD 19 5A        call    witchcraft_01_5A19      ; witchcraft01; must ultimately provide a jump address in HL
+5A18 E9          jp      (hl)            ; if we made it back here, dispatch to computed address
+5A18         ; End of function witchcraft_00_5A14
 5A19         ; =============== S U B R O U T I N E =======================================
-5A19         ; XXX witchcraft; will ultimately provide a jump address
-5A19         sub_5A19:
-5A19 CD 1E 5A        call    sub_5A1E            ; XXX witchcraft
-5A1C 18 FB       jr      sub_5A19            ; ?keep processing until done?
-5A1C         ; End of function sub_5A19
+5A19         ; witchcraft01; must ultimately provide a jump address in HL
+5A19         witchcraft_01_5A19:             ; ...
+5A19 CD 1E 5A        call    witchcraft_02_5A1E      ; witchcraft02; dispatch to helpers; may or may not return
+5A1C 18 FB       jr      witchcraft_01_5A19      ; if we made it back here, keep processing (helper will have advanced pointer)
+5A1C         ; End of function witchcraft_01_5A19
 5A1E         ; =============== S U B R O U T I N E =======================================
-5A1E         ; XXX witchcraft
-5A1E         sub_5A1E:
-5A1E 7E          ld      a, (hl)             ; a function code
-5A1F 47          ld      b, a
-5A20 23          inc     hl
+5A1E         ; witchcraft02; dispatch to helpers; may or may not return
+5A1E         witchcraft_02_5A1E:             ; ...
+5A1E 7E          ld      a, (hl)             ; a dispatch code
+5A1F 47          ld      b, a            ; remember code for our handlers
+5A20 23          inc     hl              ; data after code; remember for our handlers
 5A21 FE B0       cp      0B0h
-5A23 38 08       jr      c, cont_5A2D        ; less than B0h; directly dispatch
+5A23 38 08       jr      c, cont_5A2D        ; less than B0h; directly dispatch (overrun? only 17 entries)
 5A25 FE C0       cp      0C0h
-5A27 3E 10       ld      a, 10h
-5A29 38 02       jr      c, cont_5A2D        ; B0-BFh; force to sub_5B13
-5A2B 3E 01       ld      a, 1            ; C0h and greater; force to sub_5A52
+5A27 3E 10       ld      a, 16
+5A29 38 02       jr      c, cont_5A2D        ; B0-BFh; force to idx 16: sub_ 5B13
+5A2B 3E 01       ld      a, 1            ; C0h and greater; force to idx 1: sub_ 5A56
 5A2D         cont_5A2D:              ; ...
-5A2D CD 05 59        call    sub_5905            ; thunk via subsequent table through A
-5A2D         ; End of function sub_5A1E
-5A30 52 5A   dispatch_5A30:dw sub_5A52       ; XXX return to caller's caller
-5A32 56 5A       dw sub_5A56
-5A34 6C 5A       dw sub_5A6C
-5A36 71 5A       dw sub_5A71             ; XXX protect DE around RST 10
-5A38 7B 5A       dw sub_5A7B
-5A3A 84 5A       dw sub_5A84
-5A3C 88 5A       dw sub_5A88
-5A3E 8C 5A       dw sub_5A8C
-5A40 A0 5A       dw sub_5AA0
-5A42 AE 5A       dw sub_5AAE
-5A44 CC 5A       dw sub_5ACC
-5A46 91 5A       dw sub_5A91
-5A48 D8 5A       dw sub_5AD8
-5A4A AB 5A       dw sub_5AAB
-5A4C 77 5A       dw sub_5A77
-5A4E C6 5A       dw sub_5AC6
-5A50 13 5B       dw sub_5B13
+5A2D CD 05 59        call    doMagicDispatch_5905    ; dispatch (not call) by A with subsequent table
+5A2D         ; End of function witchcraft_02_5A1E
+5A30 52 5A   witchcraftSpells_5A30:dw witchspell00_5A52 ; end processing and thunk to HL
+5A32 56 5A       dw witchspell01_5A56        ; XXX 1; also C0 and above; do things with table off_ 5B5D
+5A34 6C 5A       dw witchspell02_5A6C        ; load DE and continue processing
+5A36 71 5A       dw witchspell03_5A71        ; protect DE around a RST 10 program
+5A38 7B 5A       dw witchspell04_5A7B
+5A3A 84 5A       dw witchspell05_5A84
+5A3C 88 5A       dw witchspell06_5A88
+5A3E 8C 5A       dw witchspell07_5A8C
+5A40 A0 5A       dw witchspell08_5AA0
+5A42 AE 5A       dw witchspell09_5AAE
+5A44 CC 5A       dw witchspell0a_5ACC
+5A46 91 5A       dw witchspell0b_5A91
+5A48 D8 5A       dw witchspell0c_5AD8
+5A4A AB 5A       dw witchspell0d_5AAB
+5A4C 77 5A       dw witchspell0e_5A77
+5A4E C6 5A       dw witchspell0f_5AC6
+5A50 13 5B       dw witchspell10_5B13
 5A52         ; =============== S U B R O U T I N E =======================================
-5A52         ; XXX return to caller's caller
-5A52         sub_5A52:
+5A52         ; end processing and thunk to HL
+5A52         witchspell00_5A52:          ; ...
 5A52 33          inc     sp
 5A53 33          inc     sp
 5A54 C9          ret
-5A54         ; End of function sub_5A52
+5A54         ; End of function witchspell00_5A52
 5A55         ; =============== S U B R O U T I N E =======================================
 5A55         sub_5A55:
 5A55 47          ld      b, a
 5A55         ; End of function sub_5A55
 5A56         ; =============== S U B R O U T I N E =======================================
-5A56         sub_5A56:
+5A56         ; XXX 1; also C0 and above; do things with table off_ 5B5D
+5A56         witchspell01_5A56:          ; ...
 5A56 78          ld      a, b
 5A57 E6 1F       and     1Fh
 5A59 E5          push    hl
 5A5A 21 5D 5B        ld      hl, off_5B5D        ; XXX 19 entries pointing to data that may be Japanese text
-5A5D CD 0B 59        call    sub_590B            ; HL = ((uint16_t*)HL) [A]
+5A5D CD 0B 59        call    getWordByIndex_590B     ; HL = ((uint16_t*)HL) [A]
 5A60 4E          ld      c, (hl)
 5A61 CB 68       bit     5, b
 5A63 C4 BD 5A        call    nz, sub_5ABD
@@ -15221,83 +15222,85 @@
 5A67 CD D3 5A        call    sub_5AD3
 5A6A E1          pop     hl
 5A6B C9          ret
-5A6B         ; End of function sub_5A56
+5A6B         ; End of function witchspell01_5A56
 5A6C         ; =============== S U B R O U T I N E =======================================
-5A6C         sub_5A6C:
+5A6C         ; load DE and continue processing
+5A6C         witchspell02_5A6C:          ; ...
 5A6C 5E          ld      e, (hl)
 5A6D 23          inc     hl
 5A6E 56          ld      d, (hl)
 5A6F 23          inc     hl
 5A70 C9          ret
-5A70         ; End of function sub_5A6C
+5A70         ; End of function witchspell02_5A6C
 5A71         ; =============== S U B R O U T I N E =======================================
-5A71         ; XXX protect DE around RST 10
-5A71         sub_5A71:
+5A71         ; protect DE around a RST 10 program
+5A71         witchspell03_5A71:          ; ...
 5A71 D5          push    de
 5A72 CD 23 41        call    impl_rst10_4123         ; run VM program
 5A75 D1          pop     de
 5A76 C9          ret
-5A76         ; End of function sub_5A71
+5A76         ; End of function witchspell03_5A71
 5A77         ; =============== S U B R O U T I N E =======================================
-5A77         sub_5A77:
+5A77         witchspell0e_5A77:          ; ...
 5A77 3E 32       ld      a, 32h ; '2'
 5A79 18 02       jr      loc_5A7D
-5A79         ; End of function sub_5A77
+5A79         ; End of function witchspell0e_5A77
 5A7B         ; =============== S U B R O U T I N E =======================================
-5A7B         sub_5A7B:
+5A7B         witchspell04_5A7B:          ; ...
 5A7B 3E 33       ld      a, 33h ; '3'
 5A7D         loc_5A7D:
-5A7D CD 8E 5A        call    sub_5A8E
+5A7D CD 8E 5A        call    sub_5A8E            ; XXX store A to (DE) and advance DE
 5A80 0E 03       ld      c, 3
 5A82 18 4F       jr      sub_5AD3
-5A82         ; End of function sub_5A7B
+5A82         ; End of function witchspell04_5A7B
 5A84         ; =============== S U B R O U T I N E =======================================
-5A84         sub_5A84:
+5A84         witchspell05_5A84:          ; ...
 5A84 3E 31       ld      a, 31h ; '1'
-5A86 18 06       jr      sub_5A8E
-5A86         ; End of function sub_5A84
+5A86 18 06       jr      sub_5A8E            ; XXX store A to (DE) and advance DE
+5A86         ; End of function witchspell05_5A84
 5A88         ; =============== S U B R O U T I N E =======================================
-5A88         sub_5A88:
+5A88         witchspell06_5A88:          ; ...
 5A88 3E 43       ld      a, 43h ; 'C'
-5A8A 18 02       jr      sub_5A8E
-5A8A         ; End of function sub_5A88
+5A8A 18 02       jr      sub_5A8E            ; XXX store A to (DE) and advance DE
+5A8A         ; End of function witchspell06_5A88
 5A8C         ; =============== S U B R O U T I N E =======================================
-5A8C         sub_5A8C:
+5A8C         witchspell07_5A8C:          ; ...
 5A8C 3E 44       ld      a, 44h ; 'D'
-5A8C         ; End of function sub_5A8C
+5A8C         ; End of function witchspell07_5A8C
 5A8E         ; =============== S U B R O U T I N E =======================================
+5A8E         ; XXX store A to (DE) and advance DE
 5A8E         sub_5A8E:
 5A8E 12          ld      (de), a
 5A8F 13          inc     de
 5A90 C9          ret
 5A90         ; End of function sub_5A8E
 5A91         ; =============== S U B R O U T I N E =======================================
-5A91         sub_5A91:
-5A91 E5          push    hl
+5A91         witchspell0b_5A91:          ; ...
+5A91 E5          push    hl              ; save
 5A92 EB          ex      de, hl
 5A93 11 00 CA        ld      de, unk_CA00
-5A96 ED 53 E8 C1     ld      (word_C1E8), de
+5A96 ED 53 E8 C1     ld      (word_C1E8), de         ; XXX sometimes set to point to unk_ CA00
 5A9A A7          and     a
 5A9B ED 52       sbc     hl, de
-5A9D EB          ex      de, hl
-5A9E E1          pop     hl
+5A9D EB          ex      de, hl          ; XXX effectively DE -= CA00; so I guess computing an end index
+5A9E E1          pop     hl              ; restore
 5A9F C9          ret
-5A9F         ; End of function sub_5A91
+5A9F         ; End of function witchspell0b_5A91
 5AA0         ; =============== S U B R O U T I N E =======================================
-5AA0         sub_5AA0:
-5AA0 CD 91 5A        call    sub_5A91
+5AA0         witchspell08_5AA0:          ; ...
+5AA0 CD 91 5A        call    witchspell0b_5A91
 5AA3 ED 53 EA C1     ld      (word_C1EA), de
 5AA7 D5          push    de
 5AA8 E5          push    hl
 5AA9 18 41       jr      loc_5AEC
-5AA9         ; End of function sub_5AA0
+5AA9         ; End of function witchspell08_5AA0
 5AAB         ; =============== S U B R O U T I N E =======================================
-5AAB         sub_5AAB:
+5AAB         witchspell0d_5AAB:          ; ...
 5AAB 4E          ld      c, (hl)
 5AAC 18 03       jr      loc_5AB1
-5AAC         ; End of function sub_5AAB
+5AAC         ; End of function witchspell0d_5AAB
 5AAE         ; =============== S U B R O U T I N E =======================================
-5AAE         sub_5AAE:
+5AAE         witchspell09_5AAE:          ; ...
 5AAE CD BD 5A        call    sub_5ABD
 5AB1         loc_5AB1:
 5AB1 23          inc     hl
@@ -15310,27 +15313,27 @@
 5ABA E1          pop     hl
 5ABB 23          inc     hl
 5ABC C9          ret
-5ABC         ; End of function sub_5AAE
+5ABC         ; End of function witchspell09_5AAE
 5ABD         ; =============== S U B R O U T I N E =======================================
 5ABD         sub_5ABD:
 5ABD 3E 39       ld      a, 39h ; '9'
-5ABF CD 8E 5A        call    sub_5A8E
+5ABF CD 8E 5A        call    sub_5A8E            ; XXX store A to (DE) and advance DE
 5AC2 4E          ld      c, (hl)
 5AC3 79          ld      a, c
-5AC4 18 C8       jr      sub_5A8E
+5AC4 18 C8       jr      sub_5A8E            ; XXX store A to (DE) and advance DE
 5AC4         ; End of function sub_5ABD
 5AC6         ; =============== S U B R O U T I N E =======================================
-5AC6         sub_5AC6:
+5AC6         witchspell0f_5AC6:          ; ...
 5AC6 CD BD 5A        call    sub_5ABD
 5AC9 23          inc     hl
 5ACA 18 07       jr      sub_5AD3
-5ACA         ; End of function sub_5AC6
+5ACA         ; End of function witchspell0f_5AC6
 5ACC         ; =============== S U B R O U T I N E =======================================
-5ACC         sub_5ACC:
+5ACC         witchspell0a_5ACC:          ; ...
 5ACC 3E 34       ld      a, 34h ; '4'
-5ACE CD 8E 5A        call    sub_5A8E
+5ACE CD 8E 5A        call    sub_5A8E            ; XXX store A to (DE) and advance DE
 5AD1 0E 02       ld      c, 2
-5AD1         ; End of function sub_5ACC
+5AD1         ; End of function witchspell0a_5ACC
 5AD3         ; =============== S U B R O U T I N E =======================================
 5AD3         sub_5AD3:
 5AD3 06 00       ld      b, 0
@@ -15338,7 +15341,7 @@
 5AD7 C9          ret
 5AD7         ; End of function sub_5AD3
 5AD8         ; =============== S U B R O U T I N E =======================================
-5AD8         sub_5AD8:
+5AD8         witchspell0c_5AD8:          ; ...
 5AD8 D5          push    de
 5AD9 06 00       ld      b, 0
 5ADB 7E          ld      a, (hl)
@@ -15348,7 +15351,7 @@
 5ADF 56          ld      d, (hl)
 5AE0 23          inc     hl
 5AE1 E5          push    hl
-5AE2 ED 53 E8 C1     ld      (word_C1E8), de
+5AE2 ED 53 E8 C1     ld      (word_C1E8), de         ; XXX sometimes set to point to unk_ CA00
 5AE6 26 00       ld      h, 0
 5AE8 6F          ld      l, a
 5AE9 22 EA C1        ld      (word_C1EA), hl
@@ -15361,7 +15364,7 @@
 5AF8 E1          pop     hl
 5AF9 D1          pop     de
 5AFA C9          ret
-5AFA         ; End of function sub_5AD8
+5AFA         ; End of function witchspell0c_5AD8
 5AFB         ; =============== S U B R O U T I N E =======================================
 5AFB         ; XXX clear 512 bytes of stuff in a particular way
 5AFB         sub_5AFB:
@@ -15380,7 +15383,7 @@
 5B12 C9          ret
 5B12         ; End of function sub_5AFB
 5B13         ; =============== S U B R O U T I N E =======================================
-5B13         sub_5B13:
+5B13         witchspell10_5B13:          ; ...
 5B13 E5          push    hl
 5B14 D5          push    de
 5B15 11 6C C8        ld      de, unk_C86C        ; XXX copied from unk_5B4D
@@ -15418,7 +15421,7 @@
 5B49 ED B0       ldir
 5B4B E1          pop     hl
 5B4C C9          ret
-5B4C         ; End of function sub_5B13
+5B4C         ; End of function witchspell10_5B13
 5B4D 32      unk_5B4D:db  32h ; 2            ; ...
 5B4D                             ; XXX copied to unk_ C86C
 5B4E 02          db    2
@@ -15693,7 +15696,7 @@
 5C76         ; End of function sub_5C58
 5C77         ; START OF FUNCTION CHUNK FOR sub_5C49
 5C77         loc_5C77:
-5C77 21 30 C1        ld      hl, unk_C130
+5C77 21 30 C1        ld      hl, unk_C130        ; XXX array of 17 8-byte structures?
 5C7A 7E          ld      a, (hl)
 5C7B CD 9A 5C        call    sub_5C9A
 5C7E C9          ret
@@ -16259,7 +16262,7 @@
 60B3 20 EE       jr      nz, loop_60A3
 60B5 AF          xor     a
 60B6 32 09 C9        ld      (byte_C909), a      ; XXX a bitfield
-60B9 21 00 C8        ld      hl, unk_C800
+60B9 21 00 C8        ld      hl, unk_C800        ; XXX 2 KiB cleared with spaces
 60BC 22 0F C9        ld      (word_C90F), hl
 60BF 22 11 C9        ld      (word_C911), hl
 60C2 3E 01       ld      a, 1
@@ -16854,12 +16857,12 @@
 64A7 87          add     a, a
 64A8 87          add     a, a
 64A9 87          add     a, a
-64AA 21 18 65        ld      hl, 6518h
+64AA 21 18 65        ld      hl, unk_6518
 64AD 5F          ld      e, a
 64AE 16 00       ld      d, 0
 64B0 19          add     hl, de
 64B1 CD 2E 66        call    sub_662E            ; XXX length prefixed data to C91C for RST 10
-64B4 21 50 65        ld      hl, 6550h
+64B4 21 50 65        ld      hl, unk_6550
 64B7 19          add     hl, de
 64B8 CD 4E 66        call    sub_664E            ; XXX send length-prefixed data to sub_ 6130
 64BB C3 39 64        jp      loc_6439
@@ -16922,7 +16925,8 @@
 6515 28 FA       jr      z, wait_6511        ; spin wait
 6517 C9          ret
 6517         ; End of function sub_650E
-6518 01          db    1
+6518 01      unk_6518:db    1            ; ...
+6518                             ; XXX a series of 8 byte structs
 6519 91          db  91h ; ë
 651A 00          db    0
 651B 00          db    0
@@ -16978,7 +16982,8 @@
 654D 00          db    0
 654E 00          db    0
 654F 00          db    0
-6550 00          db    0
+6550 00      unk_6550:db    0            ; ...
+6550                             ; XXX a series of 8 byte structs
 6551 00          db    0
 6552 00          db    0
 6553 00          db    0
@@ -17072,7 +17077,7 @@
 65D7 FE 03       cp      3
 65D9 20 03       jr      nz, loc_65DE
 65DB         loc_65DB:
-65DB 21 90 65        ld      hl, 6590h
+65DB 21 90 65        ld      hl, unk_6590
 65DE         loc_65DE:
 65DE 22 27 C9        ld      (word_C927), hl
 65E1 E1          pop     hl
@@ -17124,10 +17129,11 @@
 6616 01          db 1
 6617 00          db 0
 6618 05      byte_6618:db 5              ; ...
-6618                             ; length-prefixed RST 10 program
-6619 39          db 39h              ; vmop39_43A0
-661A 03 1D       dw 1D03h                ; 031D
-661C 20 1D       dw 1D20h                ; 201d
+6619 39          db  39h ; 9
+661A 03          db    3
+661B 1D          db  1Dh
+661C 20          db  20h
+661D 1D          db  1Dh
 661E         ; =============== S U B R O U T I N E =======================================
 661E         sub_661E:
 661E F5          push    af
@@ -19759,6 +19765,7 @@
 8103 ??      byte_8103:ds 1              ; ...
 8103                             ; XXX ??? previous motor 'phase'
 8104 ?? ??   word_8104:ds 2              ; ...
+8104                             ; XXX big-endian
 8106 ??      unk_8106:ds 1
 8107 ??          ds 1
 8108 ?? ??   word_8108:ds 2              ; ...
@@ -23862,6 +23869,7 @@ C12D ??          ds 1
 C12E ??          ds 1
 C12F ??      byte_C12F:ds 1              ; ...
 C130 ??      unk_C130:ds 1
+C130                             ; XXX array of 17 8-byte structures?
 C131 ??          ds 1
 C132 ??          ds 1
 C133 ??          ds 1
@@ -24045,6 +24053,7 @@ C1E6 ??          ds 1
 C1E7 ??      unk_C1E7:ds 1
 C1E7                             ; XXX a dynamically built RST 10 program, sometimes with 62h opcode
 C1E8 ?? ??   word_C1E8:ds 2              ; ...
+C1E8                             ; XXX sometimes set to point to unk_ CA00
 C1EA ?? ??   word_C1EA:ds 2              ; ...
 C1EC ??      byte_C1EC:ds 1              ; ...
 C1ED ??          ds 1
@@ -24405,6 +24414,7 @@ C348 ?? ??   word_C348:ds 2              ; ...
 C34A ?? ??   word_C34A:ds 2              ; ...
 C34C ?? ??   word_C34C:ds 2              ; ...
 C34E ?? ??   word_C34E:ds 2              ; ...
+C34E                             ; XXX ptr to a rst 10 program
 C350 ??      unk_C350:ds 1
 C351 ??      unk_C351:ds 1
 C352 ??      unk_C352:ds 1
@@ -25586,6 +25596,7 @@ C7FD ??          ds 1
 C7FE ??          ds 1
 C7FF ??          ds 1
 C800 ??      unk_C800:ds 1
+C800                             ; XXX 2 KiB cleared with spaces
 C801 ??          ds 1
 C802 ??          ds 1
 C803 ??          ds 1
@@ -25617,7 +25628,7 @@ C81C ??          ds 1
 C81D ??          ds 1
 C81E ??          ds 1
 C81F ??          ds 1
-C820 ??          ds 1
+C820 ??      unk_C820:ds 1
 C821 ??          ds 1
 C822 ??          ds 1
 C823 ??          ds 1
