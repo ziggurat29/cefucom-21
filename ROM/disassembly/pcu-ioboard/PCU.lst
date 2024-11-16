@@ -103,7 +103,7 @@
 00E4 AF          xor     a
 00E5 D3 61       out     (61h), a            ; 8255a-b; clear
 00E7 D3 65       out     (65h), a            ; 8255b-b; clear
-00E9 C3 68 01        jp      cont_168
+00E9 C3 68 01        jp      memtest_168
 00E9         ; END OF FUNCTION CHUNK FOR rst0_0
 00EC FF FF FF FF+byte_EC:db [ 14h ], 0FFh
 0100         ; START OF FUNCTION CHUNK FOR rst0_0
@@ -142,7 +142,7 @@
 012A 57          db 57h              ; CTCa-1; dis int, ctr, rising; TC, Sreset
 012B 01          db 1                ; CTCa-1; tc = 1
 012C 02          db 2                ; CTCa-2
-012D 57          db 57h              ; CTCa-2; dis int, ctr, rising; TC, Sreset
+012D 57      byte_12D:db 57h             ; CTCa-2; dis int, ctr, rising; TC, Sreset
 012E 01          db 1                ; CTCa-2; tc = 1
 012F 03          db 3                ; CTCa-3
 0130 57          db 57h              ; CTCa-3; dis int, ctr, rising; TC, Sreset
@@ -193,7 +193,7 @@
 0164         ; END OF FUNCTION CHUNK FOR rst0_0
 0167 00          nop
 0168         ; START OF FUNCTION CHUNK FOR rst0_0
-0168         cont_168:
+0168         memtest_168: 
 0168 3E 80       ld      a, 80h
 016A D3 10       out     (10h), a            ; PIO A data; XXX b7 high during mem test
 016C 21 00 C0        ld      hl, word_C000       ; isrCTCa0 - serin
@@ -412,7 +412,7 @@
 02C3 3A 6D C0        ld      a, (flagWarmBoot_C06D)  ; XXX a flag; NZ => reboot
 02C6 B7          or      a
 02C7 20 0D       jr      nz, horror_2D6
-02C9 3A 68 C0        ld      a, (byte_C068)      ; XXX flag causing warm boot (or maybe sleep) in main task 00
+02C9 3A 68 C0        ld      a, (byte_C068)      ; XXX flag causing sleep/powerdown in main task 00
 02CC B7          or      a
 02CD C8          ret     z
 02CE F3          di                  ; do not disturb...
@@ -454,7 +454,7 @@
 0307         ; End of function sub_2DC
 0309         ; =============== S U B R O U T I N E =======================================
 0309         sub_309:
-0309         ; FUNCTION CHUNK AT 0D6D SIZE 00000010 BYTES
+0309         ; FUNCTION CHUNK AT 0367 SIZE 000000EC BYTES
 0309 11 E5 80        ld      de, unk_80E5
 030C 01 04 00        ld      bc, 4
 030F         loc_30F: 
@@ -510,24 +510,31 @@
 035A B7          or      a
 035B 20 0A       jr      nz, loc_367
 035D 3E FF       ld      a, 0FFh
-035F 32 68 C0        ld      (byte_C068), a      ; XXX flag causing warm boot (or maybe sleep) in main task 00
+035F 32 68 C0        ld      (byte_C068), a      ; XXX flag causing sleep/powerdown in main task 00
 0362         loc_362: 
-0362 CD D2 0D        call    sub_DD2             ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
+0362 CD D2 0D        call    sub_DD2             ; XXX setup following as main task slot 2 and return to caller's caller
+0362         ; End of function sub_309
+0365         ; =============== S U B R O U T I N E =======================================
+0365         ; XXX main loop task 2; does nothing other than re-register itself
+0365         ; Attributes: thunk
+0365         sub_365:
 0365 18 FB       jr      loc_362
+0365         ; End of function sub_365
+0367         ; START OF FUNCTION CHUNK FOR sub_309
 0367         loc_367: 
 0367 F3          di                  ; (critical section around bitfield manipulation)
-0368 3A B1 80        ld      a, (unk_80B1)       ; XXX a bitfield; also goes out 8255c-c
+0368 3A B1 80        ld      a, (byte_80B1)      ; XXX a bitfield; also goes out 8255c-c
 036B CB D7       set     2, a
 036D CB BF       res     7, a
-036F 32 B1 80        ld      (unk_80B1), a       ; XXX a bitfield; also goes out 8255c-c
+036F 32 B1 80        ld      (byte_80B1), a      ; XXX a bitfield; also goes out 8255c-c
 0372 FB          ei                  ; (end critical section)
 0373 D3 6A       out     (6Ah), a            ; 8255c-c
 0375 CD C8 12        call    sub_12C8            ; XXX update read from RTC
 0378 3A 75 80        ld      a, (byte_8075)      ; time; min
-037B 32 2E E1        ld      (unk_E12E), a
+037B 32 2E E1        ld      (byte_E12E), a
 037E CD E9 11        call    clearScreenBuff_11E9    ; clear rendered screen @ E400 32x16
 0381 11 1E 14        ld      de, off_141E        ; XXX list of "described text" (row,col,len,text...)
-0384         next_384:
+0384         loc_384: 
 0384 1A          ld      a, (de)
 0385 6F          ld      l, a
 0386 13          inc     de
@@ -535,12 +542,12 @@
 0388 67          ld      h, a
 0389 13          inc     de
 038A B5          or      l
-038B 28 07       jr      z, cont_394         ; until null pointer terminates list
+038B 28 07       jr      z, loc_394          ; until null pointer terminates list
 038D D5          push    de
 038E CD F9 11        call    renderDescText_11F9     ; XXX render described text @hl into E400
 0391 D1          pop     de
-0392 18 F0       jr      next_384
-0394         cont_394:
+0392 18 F0       jr      loc_384
+0394         loc_394: 
 0394 21 6D 80        ld      hl, byte_806D       ; alarm??? hour / time??? mon
 0397 06 0F       ld      b, 0Fh
 0399 0E 06       ld      c, 6
@@ -559,13 +566,12 @@
 03BA 06 03       ld      b, 3
 03BC 0E 0B       ld      c, 0Bh
 03BE CD 19 11        call    sub_1119
-03C1 CD 9B 11        call    sub_119B
-03C4 21 4E 15        ld      hl, unk_154E
-03C7         loc_3C7:
-03C7 CD DB 11        call    sub_11DB
+03C1 CD 9B 11        call    sub_119B            ; XXX legerdemain
+03C4 21 4E 15        ld      hl, unk_154E        ; legerdemain script
+03C7 CD DB 11        call    sub_11DB            ; XXX legerdemain; e.g. block at 1598, 154e, 1804, 1868, 18e6, 1968, 1a2a
 03CA 3E FF       ld      a, 0FFh
-03CC 32 01 E1        ld      (unk_E101), a
-03CF CD E4 13        call    sub_13E4
+03CC 32 01 E1        ld      (byte_E101), a
+03CF CD E4 13        call    sub_13E4            ; XXX legerdemain
 03D2 C3 D7 03        jp      loc_3D7
 03D5         loc_3D5: 
 03D5 18 FE       jr      $
@@ -585,19 +591,19 @@
 03F2 3E FF       ld      a, 0FFh
 03F4 32 0F E1        ld      (byte_E10F), a
 03F7         loc_3F7: 
-03F7 CD D2 0D        call    sub_DD2             ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
+03F7 CD D2 0D        call    sub_DD2             ; XXX setup following as main task slot 2 and return to caller's caller
 03FA 06 00       ld      b, 0
-03FC 21 8F C0        ld      hl,  word_C08E+1        ; XXX relates to first reset bit number found in 68h; 0 = none found
+03FC 21 8F C0        ld      hl, byte_C08F       ; XXX a state that affect front panel button handling
 03FF 7E          ld      a, (hl)
 0400 70          ld      (hl), b
 0401 FE 0D       cp      0Dh
-0403 CA 58 04        jp      z, sub_458
+0403 CA 58 04        jp      z, sub_458          ; XXX alt isrCTCb1 task 02
 0406         loc_406:                ; XXX update read from RTC
 0406 CD C8 12        call    sub_12C8
-0409 3A 2E E1        ld      a, (unk_E12E)
+0409 3A 2E E1        ld      a, (byte_E12E)
 040C 47          ld      b, a
 040D 3A 75 80        ld      a, (byte_8075)      ; time; min
-0410 32 2E E1        ld      (unk_E12E), a
+0410 32 2E E1        ld      (byte_E12E), a
 0413 B8          cp      b
 0414 28 28       jr      z, loc_43E
 0416 21 6D 80        ld      hl, byte_806D       ; alarm??? hour / time??? mon
@@ -615,19 +621,19 @@
 0434 06 06       ld      b, 6
 0436 0E 08       ld      c, 8
 0438 CD 19 11        call    sub_1119
-043B CD 9B 11        call    sub_119B
+043B CD 9B 11        call    sub_119B            ; XXX legerdemain
 043E         loc_43E: 
 043E 3A 0F E1        ld      a, (byte_E10F)
 0441 B7          or      a
 0442 20 B3       jr      nz, loc_3F7
 0444 3A C8 C1        ld      a, (byte_C1C8)
 0447 B7          or      a
-0448 CA 6D 0D        jp      z, loc_D6D
-044B CD E4 13        call    sub_13E4
+0448 CA 6D 0D        jp      z, sub_D6D          ; XXX mode 6; leave and reboot (or is it power down?)
+044B CD E4 13        call    sub_13E4            ; XXX legerdemain
 044E C3 F2 03        jp      loc_3F2
 0451         loc_451: 
 0451 18 FE       jr      $               ; XXX wut?  maybe works with the distinctive PIOB thing
-0451         ; End of function sub_309
+0451         ; END OF FUNCTION CHUNK FOR sub_309
 0453         ; =============== S U B R O U T I N E =======================================
 0453         sub_453: 
 0453 AF          xor     a
@@ -635,12 +641,13 @@
 0457 C9          ret
 0457         ; End of function sub_453
 0458         ; =============== S U B R O U T I N E =======================================
+0458         ; XXX alt isrCTCb1 task 02
 0458         sub_458: 
 0458 AF          xor     a
 0459 32 C8 C1        ld      (byte_C1C8), a
 045C AF          xor     a
-045D 32 8E C0        ld      (word_C08E), a      ; XXX relates to first reset bit number found in 68h; 0 = none found
-0460 32 8F C0        ld      (word_C08E+1), a        ; XXX relates to first reset bit number found in 68h; 0 = none found
+045D 32 8E C0        ld      (byte_C08E), a      ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
+0460 32 8F C0        ld      (byte_C08F), a      ; XXX a state that affect front panel button handling
 0463 3E 02       ld      a, 2
 0465 CD D7 0D        call    sub_DD7
 0468 3E 80       ld      a, 80h
@@ -654,102 +661,99 @@
 0477 21 9E 0D        ld      hl, nullsub_10
 047A 22 32 C0        ld      (word_C032), hl         ; isrCTCb2 task 01; syscheck
 047D F3          di                  ; critical section
-047E 3A B0 80        ld      a, (byte_80B0)      ; XXX a bitfield; also goes out 8255b-b
+047E 3A B0 80        ld      a, (byte_80B0)      ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
 0481 E6 07       and     7
-0483 32 B0 80        ld      (byte_80B0), a      ; XXX a bitfield; also goes out 8255b-b
+0483 32 B0 80        ld      (byte_80B0), a      ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
 0486 FB          ei                  ; end critical section
 0487 D3 65       out     (65h), a            ; 8255b-b
 0489 3E 00       ld      a, 0
-048B 32 10 E1        ld      (byte_E110), a
+048B 32 10 E1        ld      (byte_E110), a      ; XXX mode selector 1-6
 048E CD E2 11        call    sub_11E2            ; XXX stow unk_ E800 @ unk_ E320
 0491 CD E9 11        call    clearScreenBuff_11E9    ; clear rendered screen @ E400 32x16
 0494 3E 0A       ld      a, 0Ah
 0496 32 82 E3        ld      (byte_E382), a
-0499 21 98 15        ld      hl, unk_1598
-049C CD DB 11        call    sub_11DB
-049F C3 A4 04        jp      loc_4A4
+0499 21 98 15        ld      hl, unk_1598        ; legerdemain script
+049C CD DB 11        call    sub_11DB            ; XXX legerdemain; e.g. block at 1598, 154e, 1804, 1868, 18e6, 1968, 1a2a
+049F C3 A4 04        jp      XXXsetupHandlingButtons_4A4
 04A2         loc_4A2: 
 04A2 18 FE       jr      $               ; XXX wut?  maybe works with the distinctive PIOB thing
-04A4         loc_4A4: 
-04A4 CD D2 0D        call    sub_DD2             ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
-04A7 21 8F C0        ld      hl,  word_C08E+1        ; XXX relates to first reset bit number found in 68h; 0 = none found
+04A4         XXXsetupHandlingButtons_4A4:        ; ...
+04A4 CD D2 0D        call    sub_DD2             ; XXX setup following as main task slot 2 and return to caller's caller
+04A4         ; End of function sub_458
+04A7         ; =============== S U B R O U T I N E =======================================
+04A7         ; XXX main loop task slot 2; setup via witchcraft sub_ dd2
+04A7         sub_4A7:
+04A7 21 8F C0        ld      hl, byte_C08F       ; XXX a state that affect front panel button handling
 04AA 7E          ld      a, (hl)
 04AB 06 00       ld      b, 0
 04AD 70          ld      (hl), b
 04AE FE 0D       cp      0Dh
 04B0 28 29       jr      z, loc_4DB
-04B2 21 8E C0        ld      hl, word_C08E       ; XXX relates to first reset bit number found in 68h; 0 = none found
+04B2 21 8E C0        ld      hl, byte_C08E       ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 04B5 7E          ld      a, (hl)
 04B6 06 00       ld      b, 0
 04B8 70          ld      (hl), b
 04B9 B7          or      a
-04BA 28 E8       jr      z, loc_4A4
+04BA 28 E8       jr      z, XXXsetupHandlingButtons_4A4 ; there is no 'mode 0'
 04BC FE 07       cp      7
-04BE 28 E4       jr      z, loc_4A4
+04BE 28 E4       jr      z, XXXsetupHandlingButtons_4A4 ; there is no 'mode 7'
 04C0 FE 08       cp      8
-04C2 28 E0       jr      z, loc_4A4
-04C4 32 10 E1        ld      (byte_E110), a
+04C2 28 E0       jr      z, XXXsetupHandlingButtons_4A4 ; there is no 'mode 8'
+04C4 32 10 E1        ld      (byte_E110), a      ; XXX mode selector 1-6
 04C7 06 1B       ld      b, 1Bh
 04C9 0E 0E       ld      c, 0Eh
 04CB CD 94 10        call    sub_1094
-04CE 3A 10 E1        ld      a, (byte_E110)
-04D1 C6 30       add     a, 30h ; '0'
+04CE 3A 10 E1        ld      a, (byte_E110)      ; XXX mode selector 1-6
+04D1 C6 30       add     a, '0'
 04D3 CD 7A 11        call    sub_117A
-04D6 CD 9B 11        call    sub_119B
-04D9 18 C9       jr      loc_4A4
+04D6 CD 9B 11        call    sub_119B            ; XXX legerdemain
+04D9 18 C9       jr      XXXsetupHandlingButtons_4A4
 04DB         loc_4DB: 
-04DB 3A 10 E1        ld      a, (byte_E110)
+04DB 3A 10 E1        ld      a, (byte_E110)      ; XXX mode selector 1-6
 04DE B7          or      a
-04DF 28 C3       jr      z, loc_4A4
+04DF 28 C3       jr      z, XXXsetupHandlingButtons_4A4
 04E1 18 00       jr      loc_4E3
 04E3         loc_4E3: 
-04E3 21 7D 0D        ld      hl, 0D7Dh
+04E3 21 7D 0D        ld      hl, isrCTCb2task01_watchdog_D7D ; isrCTCb2 task 01 -- a watchdog on 69h b6 (must always be 1 or reboot)
 04E6 22 32 C0        ld      (word_C032), hl         ; isrCTCb2 task 01; syscheck
-04E9 21 58 04        ld      hl, 458h
+04E9 21 58 04        ld      hl, sub_458         ; XXX alt isrCTCb1 task 02
 04EC 22 24 C0        ld      (word_C024), hl         ; isrCTCb1 task 02; 2DC
-04EF 3A 10 E1        ld      a, (byte_E110)
+04EF 3A 10 E1        ld      a, (byte_E110)      ; XXX mode selector 1-6
 04F2 3D          dec     a
 04F3 07          rlca
 04F4 06 00       ld      b, 0
 04F6 4F          ld      c, a
-04F7 21 01 05        ld      hl, 501h
+04F7 21 01 05        ld      hl, dispatch_501
 04FA 09          add     hl, bc
 04FB 4E          ld      c, (hl)
 04FC 23          inc     hl
 04FD 46          ld      b, (hl)
-04FD         ; End of function sub_458
-04FE         ; =============== S U B R O U T I N E =======================================
-04FE         sub_4FE:
 04FE 60          ld      h, b
 04FF 69          ld      l, c
 0500 E9          jp      (hl)
-0500         ; End of function sub_4FE
-0501         ; =============== S U B R O U T I N E =======================================
-0501         sub_501: 
-0501 0D          dec     c
-0502 05          dec     b
-0503 00          nop
-0504 4E          ld      c, (hl)
-0505 E0          ret     po
-0506 08          ex      af, af'
-0507 FB          ei
-0508 08          ex      af, af'
-0509 00          nop
-050A 60          ld      h, b
-050B 6D          ld      l, l
-050C 0D          dec     c
+0500         ; End of function sub_4A7
+0501 0D 05   dispatch_501:dw sub_50D         ; ...
+0501                             ; XXX enter mode 1 related?  Study Time Schedule
+0503 00 4E       dw sub_4E00             ; XXX enter mode 2 related?  CAI study
+0505 E0 08       dw sub_8E0              ; XXX enter mode 3 related? computer
+0507 FB 08       dw sub_8FB              ; XXX enter mode 4 related? Tape Recorder
+0509 00 60       dw sub_6000             ; XXX enter mode 5? Information
+050B 6D 0D       dw sub_D6D              ; XXX mode 6; leave and reboot (or is it power down?)
+050D         ; =============== S U B R O U T I N E =======================================
+050D         ; XXX enter mode 1 related?  Study Time Schedule
+050D         sub_50D: 
 050D 21 9E 0D        ld      hl, nullsub_10
 0510 22 32 C0        ld      (word_C032), hl         ; isrCTCb2 task 01; syscheck
 0513 21 6B 0E        ld      hl, sub_E6B
 0516 22 28 C0        ld      (word_C028), hl         ; isrCTCb1 task 04; 0FFFFh
-0516         ; End of function sub_501
+0516         ; End of function sub_50D
 0519         ; START OF FUNCTION CHUNK FOR sub_5DF
 0519         loc_519: 
 0519 F3          di                  ; (begin critical section around bitfield update)
-051A 3A B0 80        ld      a, (byte_80B0)      ; XXX a bitfield; also goes out 8255b-b
-051D E6 07       and     7
-051F CB FF       set     7, a
-0521 32 B0 80        ld      (byte_80B0), a      ; XXX a bitfield; also goes out 8255b-b
+051A 3A B0 80        ld      a, (byte_80B0)      ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
+051D E6 07       and     7               ; XXX preserve 'progress' leds
+051F CB FF       set     7, a            ; indicate 'mode 1' led
+0521 32 B0 80        ld      (byte_80B0), a      ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
 0524 FB          ei                  ; (end critical section)
 0525 D3 65       out     (65h), a            ; 8255b-b
 0527 CD E2 11        call    sub_11E2            ; XXX stow unk_ E800 @ unk_ E320
@@ -821,9 +825,9 @@
 057E 3E 01       ld      a, 1
 0580 CD B2 10        call    sub_10B2
 0583 CD A7 10        call    sub_10A7
-0586 CD 9B 11        call    sub_119B
-0589 21 04 18        ld      hl, 1804h
-058C CD DB 11        call    sub_11DB
+0586 CD 9B 11        call    sub_119B            ; XXX legerdemain
+0589 21 04 18        ld      hl, unk_1804        ; legerdemain script
+058C CD DB 11        call    sub_11DB            ; XXX legerdemain; e.g. block at 1598, 154e, 1804, 1868, 18e6, 1968, 1a2a
 058F 06 00       ld      b, 0
 0591 0E 0B       ld      c, 0Bh
 0593 CD 19 11        call    sub_1119
@@ -951,9 +955,9 @@
 060F 00          nop
 0610 00          nop
 0611         loc_611: 
-0611 CD D2 0D        call    sub_DD2             ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
+0611 CD D2 0D        call    sub_DD2             ; XXX setup following as main task slot 2 and return to caller's caller
 0614 06 00       ld      b, 0
-0616 21 8E C0        ld      hl, word_C08E       ; XXX relates to first reset bit number found in 68h; 0 = none found
+0616 21 8E C0        ld      hl, byte_C08E       ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 0619 7E          ld      a, (hl)
 061A 70          ld      (hl), b
 061B B7          or      a
@@ -979,11 +983,11 @@
 0649 06 02       ld      b, 2
 064B 0E 02       ld      c, 2
 064D CD 19 11        call    sub_1119
-0650 CD 9B 11        call    sub_119B
+0650 CD 9B 11        call    sub_119B            ; XXX legerdemain
 0653 C3 11 06        jp      loc_611
 0656         loc_656: 
-0656 21 68 18        ld      hl, unk_1868
-0659 CD DB 11        call    sub_11DB
+0656 21 68 18        ld      hl, unk_1868        ; legerdemain script
+0659 CD DB 11        call    sub_11DB            ; XXX legerdemain; e.g. block at 1598, 154e, 1804, 1868, 18e6, 1968, 1a2a
 065C 21 49 19        ld      hl, unk_1949
 065F 22 00 E3        ld      (unk_E300), hl
 0662 21 52 19        ld      hl, unk_1952
@@ -995,14 +999,14 @@
 0674 AF          xor     a
 0675 CD CA 0F        call    sub_FCA
 0678 CD 7B 10        call    sub_107B
-067B CD 9B 11        call    sub_119B
+067B CD 9B 11        call    sub_119B            ; XXX legerdemain
 067E CD 1A 12        call    sub_121A            ; XXX copy screen E400 to E600
 0681         loc_681: 
 0681 AF          xor     a
-0682 32 8E C0        ld      (word_C08E), a      ; XXX relates to first reset bit number found in 68h; 0 = none found
-0685 32 8F C0        ld      (word_C08E+1), a        ; XXX relates to first reset bit number found in 68h; 0 = none found
-0688 CD D2 0D        call    sub_DD2             ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
-068B 21 8E C0        ld      hl, word_C08E       ; XXX relates to first reset bit number found in 68h; 0 = none found
+0682 32 8E C0        ld      (byte_C08E), a      ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
+0685 32 8F C0        ld      (byte_C08F), a      ; XXX a state that affect front panel button handling
+0688 CD D2 0D        call    sub_DD2             ; XXX setup following as main task slot 2 and return to caller's caller
+068B 21 8E C0        ld      hl, byte_C08E       ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 068E 7E          ld      a, (hl)
 068F 36 00       ld      (hl), 0
 0691 B7          or      a
@@ -1016,7 +1020,7 @@
 069E 3D          dec     a
 069F 18 15       jr      loc_6B6
 06A1         loc_6A1: 
-06A1 21 8F C0        ld      hl,  word_C08E+1        ; XXX relates to first reset bit number found in 68h; 0 = none found
+06A1 21 8F C0        ld      hl, byte_C08F       ; XXX a state that affect front panel button handling
 06A4 7E          ld      a, (hl)
 06A5 36 00       ld      (hl), 0
 06A7 B7          or      a
@@ -1039,7 +1043,7 @@
 06C5 0E 0D       ld      c, 0Dh
 06C7 CD 19 11        call    sub_1119
 06CA CD 7B 10        call    sub_107B
-06CD CD 9B 11        call    sub_119B
+06CD CD 9B 11        call    sub_119B            ; XXX legerdemain
 06D0 18 AF       jr      loc_681
 06D2         loc_6D2: 
 06D2 DD 2A 00 E3     ld      ix, (unk_E300)
@@ -1140,30 +1144,38 @@
 0778         loc_778: 
 0778 C1          pop     bc
 0779         loc_779: 
-0779 21 68 19        ld      hl, unk_1968
-077C CD DB 11        call    sub_11DB
+0779 21 68 19        ld      hl, unk_1968        ; legerdemain script
+077C CD DB 11        call    sub_11DB            ; XXX legerdemain; e.g. block at 1598, 154e, 1804, 1868, 18e6, 1968, 1a2a
 077F CD 7B 10        call    sub_107B
-0782 CD 9B 11        call    sub_119B
+0782 CD 9B 11        call    sub_119B            ; XXX legerdemain
 0785 C3 81 06        jp      loc_681
-0788 02          ld      (bc), a
-0789 03          inc     bc
-078A 00          nop
-078B 03          inc     bc
-078C 02          ld      (bc), a
-078D 03          inc     bc
-078E 01 03 02        ld      bc, 203h
-0791 03          inc     bc
-0792 01 03 02        ld      bc, 203h
-0795 03          inc     bc
-0796 02          ld      (bc), a
-0797 03          inc     bc
-0798 01 03 02        ld      bc, 203h
-079B 03          inc     bc
-079C 01 03 02        ld      bc, 203h
-079F 03          inc     bc
+0788 02          db    2
+0789 03          db    3
+078A 00          db    0
+078B 03          db    3
+078C 02          db    2
+078D 03          db    3
+078E 01          db    1
+078F 03          db    3
+0790 02          db    2
+0791 03          db    3
+0792 01          db    1
+0793 03          db    3
+0794 02          db    2
+0795 03          db    3
+0796 02          db    2
+0797 03          db    3
+0798 01          db    1
+0799 03          db    3
+079A 02          db    2
+079B 03          db    3
+079C 01          db    1
+079D 03          db    3
+079E 02          db    2
+079F 03          db    3
 07A0         loc_7A0: 
-07A0 21 E6 18        ld      hl, unk_18E6
-07A3 CD DB 11        call    sub_11DB
+07A0 21 E6 18        ld      hl, unk_18E6        ; legerdemain script
+07A3 CD DB 11        call    sub_11DB            ; XXX legerdemain; e.g. block at 1598, 154e, 1804, 1868, 18e6, 1968, 1a2a
 07A6 21 55 19        ld      hl, unk_1955
 07A9 22 00 E3        ld      (unk_E300), hl
 07AC 21 5F 19        ld      hl, unk_195F
@@ -1175,14 +1187,14 @@
 07BE AF          xor     a
 07BF CD CA 0F        call    sub_FCA
 07C2 CD 7B 10        call    sub_107B
-07C5 CD 9B 11        call    sub_119B
+07C5 CD 9B 11        call    sub_119B            ; XXX legerdemain
 07C8 CD 1A 12        call    sub_121A            ; XXX copy screen E400 to E600
 07CB AF          xor     a
-07CC 32 8E C0        ld      (word_C08E), a      ; XXX relates to first reset bit number found in 68h; 0 = none found
-07CF 32 8F C0        ld      (word_C08E+1), a        ; XXX relates to first reset bit number found in 68h; 0 = none found
+07CC 32 8E C0        ld      (byte_C08E), a      ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
+07CF 32 8F C0        ld      (byte_C08F), a      ; XXX a state that affect front panel button handling
 07D2         loc_7D2: 
-07D2 CD D2 0D        call    sub_DD2             ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
-07D5 21 8E C0        ld      hl, word_C08E       ; XXX relates to first reset bit number found in 68h; 0 = none found
+07D2 CD D2 0D        call    sub_DD2             ; XXX setup following as main task slot 2 and return to caller's caller
+07D5 21 8E C0        ld      hl, byte_C08E       ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 07D8 06 00       ld      b, 0
 07DA 7E          ld      a, (hl)
 07DB 70          ld      (hl), b
@@ -1191,7 +1203,7 @@
 07DF FE 08       cp      8
 07E1 28 EF       jr      z, loc_7D2
 07E3         loc_7E3: 
-07E3 21 8F C0        ld      hl,  word_C08E+1        ; XXX relates to first reset bit number found in 68h; 0 = none found
+07E3 21 8F C0        ld      hl, byte_C08F       ; XXX a state that affect front panel button handling
 07E6 06 00       ld      b, 0
 07E8 7E          ld      a, (hl)
 07E9 70          ld      (hl), b
@@ -1214,7 +1226,7 @@
 080A 0E 0D       ld      c, 0Dh
 080C CD 19 11        call    sub_1119
 080F CD 7B 10        call    sub_107B
-0812 CD 9B 11        call    sub_119B
+0812 CD 9B 11        call    sub_119B            ; XXX legerdemain
 0815 18 BB       jr      loc_7D2
 0817         loc_817: 
 0817 FD 2A 08 E3     ld      iy, (unk_E308)
@@ -1301,8 +1313,8 @@
 08A5 C3 19 05        jp      loc_519
 08A8         loc_8A8: 
 08A8 C1          pop     bc
-08A9 21 68 19        ld      hl, unk_1968
-08AC CD DB 11        call    sub_11DB
+08A9 21 68 19        ld      hl, unk_1968        ; legerdemain script
+08AC CD DB 11        call    sub_11DB            ; XXX legerdemain; e.g. block at 1598, 154e, 1804, 1868, 18e6, 1968, 1a2a
 08AF         loc_8AF: 
 08AF CD C8 12        call    sub_12C8            ; XXX update read from RTC
 08B2 06 06       ld      b, 6
@@ -1321,35 +1333,36 @@
 08D2 0E 02       ld      c, 2
 08D4 CD 19 11        call    sub_1119
 08D7 CD 7B 10        call    sub_107B
-08DA CD 9B 11        call    sub_119B
+08DA CD 9B 11        call    sub_119B            ; XXX legerdemain
 08DD C3 D2 07        jp      loc_7D2
 08DD         ; End of function sub_5DF
 08E0         ; =============== S U B R O U T I N E =======================================
-08E0         sub_8E0:
-08E0 21 2A 1A        ld      hl, byte_1A2A
-08E3 CD DB 11        call    sub_11DB
+08E0         ; XXX enter mode 3 related? computer
+08E0         sub_8E0: 
+08E0 21 2A 1A        ld      hl, byte_1A2A       ; legerdemain script
+08E3 CD DB 11        call    sub_11DB            ; XXX legerdemain; e.g. block at 1598, 154e, 1804, 1868, 18e6, 1968, 1a2a
 08E3         ; End of function sub_8E0
 08E6         ; =============== S U B R O U T I N E =======================================
 08E6         sub_8E6: 
 08E6 3E FF       ld      a, 0FFh
 08E8 32 20 E1        ld      (byte_E120), a
 08EB F3          di                  ; (critical section around bitfield update)
-08EC 3A B0 80        ld      a, (byte_80B0)      ; XXX a bitfield; also goes out 8255b-b
-08EF E6 07       and     7
-08F1 CB EF       set     5, a
-08F3 32 B0 80        ld      (byte_80B0), a      ; XXX a bitfield; also goes out 8255b-b
+08EC 3A B0 80        ld      a, (byte_80B0)      ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
+08EF E6 07       and     7               ; XXX preserve progress leds
+08F1 CB EF       set     5, a            ; indicate 'mode 3' led
+08F3 32 B0 80        ld      (byte_80B0), a      ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
 08F6 FB          ei                  ; (end critical section)
 08F7 D3 65       out     (65h), a            ; 8255b-b
 08F9 18 4F       jr      loc_94A
 08F9         ; End of function sub_8E6
 08FB         ; =============== S U B R O U T I N E =======================================
-08FB         ; XXX mode 4 related?
-08FB         sub_8FB:
+08FB         ; XXX enter mode 4 related? Tape Recorder
+08FB         sub_8FB: 
 08FB F3          di                  ; (begin critical section around bitfield update)
-08FC 3A B0 80        ld      a, (byte_80B0)      ; XXX a bitfield; also goes out 8255b-b
-08FF E6 07       and     7
-0901 CB E7       set     4, a
-0903 32 B0 80        ld      (byte_80B0), a      ; XXX a bitfield; also goes out 8255b-b
+08FC 3A B0 80        ld      a, (byte_80B0)      ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
+08FF E6 07       and     7               ; XXX preserve progress leds
+0901 CB E7       set     4, a            ; indicate 'mode 4' led
+0903 32 B0 80        ld      (byte_80B0), a      ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
 0906 FB          ei                  ; (end critical section)
 0907 D3 65       out     (65h), a            ; 8255b-b
 0909 CD E2 11        call    sub_11E2            ; XXX stow unk_ E800 @ unk_ E320
@@ -1384,10 +1397,10 @@
 0931 0E 0D       ld      c, 0Dh
 0933 CD 19 11        call    sub_1119
 0936 01 10 00        ld      bc, 16
-0939 ED 5B 20 E3     ld      de, (unk_E320)
+0939 ED 5B 20 E3     ld      de, (word_E320)         ; XXX some sort of cursor pointer
 093D 21 38 1A        ld      hl, byte_1A38
 0940 ED B0       ldir
-0942 ED 53 20 E3     ld      (unk_E320), de
+0942 ED 53 20 E3     ld      (word_E320), de         ; XXX some sort of cursor pointer
 0946 AF          xor     a
 0947 32 20 E1        ld      (byte_E120), a
 094A         loc_94A: 
@@ -1420,10 +1433,10 @@
 098B 32 23 E1        ld      (byte_E123), a      ; XXX involved in dispatch_A64; cassette (mode 4) functions
 098E 3E FF       ld      a, 0FFh
 0990 32 2F E1        ld      (byte_E12F), a      ; XXX cassette (mode 4) functions
-0993 32 2E E1        ld      (unk_E12E), a
+0993 32 2E E1        ld      (byte_E12E), a
 0996 32 2D E1        ld      (unk_E12D), a
 0999         loc_999: 
-0999 CD D2 0D        call    sub_DD2             ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
+0999 CD D2 0D        call    sub_DD2             ; XXX setup following as main task slot 2 and return to caller's caller
 099C 3A 20 E1        ld      a, (byte_E120)
 099F B7          or      a
 09A0 20 58       jr      nz, loc_9FA
@@ -1444,10 +1457,10 @@
 09BF CD 19 11        call    sub_1119
 09C2         loc_9C2: 
 09C2 CD C8 12        call    sub_12C8            ; XXX update read from RTC
-09C5 3A 2E E1        ld      a, (unk_E12E)
+09C5 3A 2E E1        ld      a, (byte_E12E)
 09C8 47          ld      b, a
 09C9 3A 75 80        ld      a, (byte_8075)      ; time; min
-09CC 32 2E E1        ld      (unk_E12E), a
+09CC 32 2E E1        ld      (byte_E12E), a
 09CF B8          cp      b
 09D0 28 25       jr      z, loc_9F7
 09D2 21 6D 80        ld      hl, byte_806D       ; alarm??? hour / time??? mon
@@ -1466,9 +1479,9 @@
 09F2 0E 02       ld      c, 2
 09F4 CD 19 11        call    sub_1119
 09F7         loc_9F7: 
-09F7 CD 9B 11        call    sub_119B
+09F7 CD 9B 11        call    sub_119B            ; XXX legerdemain
 09FA         loc_9FA: 
-09FA 21 8E C0        ld      hl, word_C08E       ; XXX relates to first reset bit number found in 68h; 0 = none found
+09FA 21 8E C0        ld      hl, byte_C08E       ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 09FD 5E          ld      e, (hl)
 09FE AF          xor     a
 09FF 77          ld      (hl), a
@@ -2047,11 +2060,12 @@
 0D69 32 2D E1        ld      (unk_E12D), a
 0D6C C9          ret
 0D6C         ; End of function sub_D5B
-0D6D         ; START OF FUNCTION CHUNK FOR sub_309
-0D6D         loc_D6D: 
+0D6D         ; =============== S U B R O U T I N E =======================================
+0D6D         ; XXX mode 6; leave and reboot (or is it power down?)
+0D6D         sub_D6D: 
 0D6D F3          di
 0D6E 3E FF       ld      a, 0FFh
-0D70 32 68 C0        ld      (byte_C068), a      ; XXX flag causing warm boot (or maybe sleep) in main task 00
+0D70 32 68 C0        ld      (byte_C068), a      ; XXX flag causing sleep/powerdown in main task 00
 0D73 E1          pop     hl
 0D74 FD E1       pop     iy
 0D76 DD E1       pop     ix
@@ -2060,7 +2074,7 @@
 0D7A C1          pop     bc
 0D7B F1          pop     af
 0D7C C9          ret
-0D7C         ; END OF FUNCTION CHUNK FOR sub_309
+0D7C         ; End of function sub_D6D
 0D7D         ; =============== S U B R O U T I N E =======================================
 0D7D         ; isrCTCb2 task 01 -- a watchdog on 69h b6 (must always be 1 or reboot)
 0D7D         isrCTCb2task01_watchdog_D7D:        ; ...
@@ -2076,7 +2090,7 @@
 0D8D 32 69 C0        ld      (byte_C069), a      ; XXX a watchdog timer; initted to 5 on 69h b6 set (system ready)
 0D90 20 0C       jr      nz, nullsub_10
 0D92 3E FF       ld      a, 0FFh
-0D94 32 68 C0        ld      (byte_C068), a      ; XXX flag causing warm boot (or maybe sleep) in main task 00
+0D94 32 68 C0        ld      (byte_C068), a      ; XXX flag causing sleep/powerdown in main task 00
 0D97 18 05       jr      nullsub_10
 0D99         resetWatchdog_D99:          ; ...
 0D99 3E 05       ld      a, 5            ; give it 5 chances to come back
@@ -2128,7 +2142,7 @@
 0DD1 C9          ret
 0DD1         ; END OF FUNCTION CHUNK FOR sub_D9F
 0DD2         ; =============== S U B R O U T I N E =======================================
-0DD2         ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
+0DD2         ; XXX setup following as main task slot 2 and return to caller's caller
 0DD2         sub_DD2: 
 0DD2 E1          pop     hl
 0DD3 22 24 C0        ld      (word_C024), hl         ; store in main loop task slot 2
@@ -2137,16 +2151,19 @@
 0DD7         ; =============== S U B R O U T I N E =======================================
 0DD7         sub_DD7: 
 0DD7 E1          pop     hl              ; there goes the return address
-0DD8 22 00 E2        ld      (unk_E200), hl      ; stow the return address
+0DD8 22 00 E2        ld      (word_E200), hl         ; stow the return address
 0DDB 32 02 E2        ld      (unk_E202), a       ; stow the count
 0DDE         loop_DDE:
-0DDE CD D2 0D        call    sub_DD2             ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
+0DDE CD D2 0D        call    sub_DD2             ; XXX setup following as main task slot 2 and return to caller's caller
+0DDE         ; End of function sub_DD7
+0DE1         ; =============== S U B R O U T I N E =======================================
+0DE1         sub_DE1:
 0DE1 21 02 E2        ld      hl, unk_E202
 0DE4 35          dec     (hl)
 0DE5 20 F7       jr      nz, loop_DDE
-0DE7 2A 00 E2        ld      hl, (unk_E200)      ; restore the return address
+0DE7 2A 00 E2        ld      hl, (word_E200)         ; restore the return address
 0DEA E9          jp      (hl)            ; jump to it (which is like a call, since we already popped it)
-0DEA         ; End of function sub_DD7
+0DEA         ; End of function sub_DE1
 0DEB B0 C0   off_DEB:dw byte_C0B0            ; ...
 0DEB                             ; XXX pointers to some structures (at least 16-byte long, maybe more)
 0DED 00 84       dw unk_8400
@@ -2207,9 +2224,9 @@
 0E5B 36 00       ld      (hl), 0
 0E5D B7          or      a
 0E5E 20 0A       jr      nz, leave_E6A
-0E60 3A B1 80        ld      a, (unk_80B1)       ; XXX a bitfield; also goes out 8255c-c
+0E60 3A B1 80        ld      a, (byte_80B1)      ; XXX a bitfield; also goes out 8255c-c
 0E63 CB F7       set     6, a
-0E65 32 B1 80        ld      (unk_80B1), a       ; XXX a bitfield; also goes out 8255c-c
+0E65 32 B1 80        ld      (byte_80B1), a      ; XXX a bitfield; also goes out 8255c-c
 0E68 D3 6A       out     (6Ah), a            ; 8255c-c
 0E6A         leave_E6A:              ; ...
 0E6A C9          ret
@@ -2236,7 +2253,7 @@
 0E86         loc_E86: 
 0E86 AF          xor     a
 0E87 32 C8 C1        ld      (byte_C1C8), a
-0E8A 21 58 04        ld      hl, sub_458
+0E8A 21 58 04        ld      hl, sub_458         ; XXX alt isrCTCb1 task 02
 0E8D 22 24 C0        ld      (word_C024), hl         ; isrCTCb1 task 02; 2DC
 0E90 21 7D 0D        ld      hl, isrCTCb2task01_watchdog_D7D ; isrCTCb2 task 01 -- a watchdog on 69h b6 (must always be 1 or reboot)
 0E93 22 32 C0        ld      (word_C032), hl         ; isrCTCb2 task 01; syscheck
@@ -2341,10 +2358,10 @@
 0F50 06 20       ld      b, 20h ; ' '
 0F52         loc_F52: 
 0F52 F3          di                  ; (critical section around bitfield update AND port write)
-0F53 3A B1 80        ld      a, (unk_80B1)       ; XXX a bitfield; also goes out 8255c-c
+0F53 3A B1 80        ld      a, (byte_80B1)      ; XXX a bitfield; also goes out 8255c-c
 0F56 CB AF       res     5, a
 0F58 B0          or      b
-0F59 32 B1 80        ld      (unk_80B1), a       ; XXX a bitfield; also goes out 8255c-c
+0F59 32 B1 80        ld      (byte_80B1), a      ; XXX a bitfield; also goes out 8255c-c
 0F5C D3 6A       out     (6Ah), a            ; 8255c-c
 0F5E FB          ei                  ; (end critical section)
 0F5F C9          ret
@@ -2529,7 +2546,7 @@
 107A         ; End of function sub_FCA
 107B         ; =============== S U B R O U T I N E =======================================
 107B         sub_107B:
-107B 2A 20 E3        ld      hl, (unk_E320)
+107B 2A 20 E3        ld      hl, (word_E320)         ; XXX some sort of cursor pointer
 107E 3E 34       ld      a, 34h ; '4'
 1080 77          ld      (hl), a
 1081 23          inc     hl
@@ -2542,12 +2559,12 @@
 108C 3E 43       ld      a, 43h ; 'C'
 108E 77          ld      (hl), a
 108F 23          inc     hl
-1090 22 20 E3        ld      (unk_E320), hl
+1090 22 20 E3        ld      (word_E320), hl         ; XXX some sort of cursor pointer
 1093 C9          ret
 1093         ; End of function sub_107B
 1094         ; =============== S U B R O U T I N E =======================================
 1094         sub_1094:
-1094 2A 20 E3        ld      hl, (unk_E320)
+1094 2A 20 E3        ld      hl, (word_E320)         ; XXX some sort of cursor pointer
 1097 3E 34       ld      a, 34h ; '4'
 1099 77          ld      (hl), a
 109A 23          inc     hl
@@ -2558,21 +2575,21 @@
 109F 3E 44       ld      a, 44h ; 'D'
 10A1 77          ld      (hl), a
 10A2 23          inc     hl
-10A3 22 20 E3        ld      (unk_E320), hl
+10A3 22 20 E3        ld      (word_E320), hl         ; XXX some sort of cursor pointer
 10A6 C9          ret
 10A6         ; End of function sub_1094
 10A7         ; =============== S U B R O U T I N E =======================================
 10A7         sub_10A7:
-10A7 2A 20 E3        ld      hl, (unk_E320)
+10A7 2A 20 E3        ld      hl, (word_E320)         ; XXX some sort of cursor pointer
 10AA 3E 31       ld      a, 31h ; '1'
 10AC 77          ld      (hl), a
 10AD 23          inc     hl
-10AE 22 20 E3        ld      (unk_E320), hl
+10AE 22 20 E3        ld      (word_E320), hl         ; XXX some sort of cursor pointer
 10B1 C9          ret
 10B1         ; End of function sub_10A7
 10B2         ; =============== S U B R O U T I N E =======================================
 10B2         sub_10B2:
-10B2 2A 20 E3        ld      hl, (unk_E320)
+10B2 2A 20 E3        ld      hl, (word_E320)         ; XXX some sort of cursor pointer
 10B5 06 33       ld      b, 33h ; '3'
 10B7 70          ld      (hl), b
 10B8 23          inc     hl
@@ -2584,7 +2601,7 @@
 10BF 0E 01       ld      c, 1
 10C1 71          ld      (hl), c
 10C2 23          inc     hl
-10C3 22 20 E3        ld      (unk_E320), hl
+10C3 22 20 E3        ld      (word_E320), hl         ; XXX some sort of cursor pointer
 10C6 32 50 E3        ld      (unk_E350), a
 10C9 06 20       ld      b, 20h ; ' '
 10CB FE 03       cp      3
@@ -2605,10 +2622,10 @@
 10E3 01 08 00        ld      bc, 8
 10E6 ED B0       ldir
 10E8 21 40 E3        ld      hl, unk_E340
-10EB ED 5B 20 E3     ld      de, (unk_E320)
+10EB ED 5B 20 E3     ld      de, (word_E320)         ; XXX some sort of cursor pointer
 10EF 01 04 00        ld      bc, 4
 10F2 ED B0       ldir
-10F4 ED 53 20 E3     ld      (unk_E320), de
+10F4 ED 53 20 E3     ld      (word_E320), de         ; XXX some sort of cursor pointer
 10F8 C9          ret
 10F8         ; End of function sub_10B2
 10F9 32      byte_10F9:db 32h            ; ...
@@ -2659,7 +2676,7 @@
 1128 4F          ld      c, a
 1129 CD 94 10        call    sub_1094
 112C 21 40 E3        ld      hl, unk_E340
-112F ED 5B 20 E3     ld      de, (unk_E320)
+112F ED 5B 20 E3     ld      de, (word_E320)         ; XXX some sort of cursor pointer
 1133 01 04 00        ld      bc, 4
 1136 ED B0       ldir
 1138 06 00       ld      b, 0
@@ -2699,7 +2716,7 @@
 116A 12          ld      (de), a
 116B 13          inc     de
 116C 10 EB       djnz    loop_1159
-116E ED 53 20 E3     ld      (unk_E320), de
+116E ED 53 20 E3     ld      (word_E320), de         ; XXX some sort of cursor pointer
 1172 21 51 E3        ld      hl, unk_E351
 1175 34          inc     (hl)
 1176 C1          pop     bc
@@ -2708,7 +2725,7 @@
 1179         ; End of function sub_1119
 117A         ; =============== S U B R O U T I N E =======================================
 117A         sub_117A:
-117A 2A 20 E3        ld      hl, (unk_E320)
+117A 2A 20 E3        ld      hl, (word_E320)         ; XXX some sort of cursor pointer
 117D 06 39       ld      b, 39h ; '9'
 117F 70          ld      (hl), b
 1180 23          inc     hl
@@ -2717,43 +2734,48 @@
 1184 E5          push    hl
 1185 DD E1       pop     ix
 1187 23          inc     hl
-1188 FE 20       cp      20h ; ' '
+1188 FE 20       cp      ' '
 118A 30 09       jr      nc, loc_1195
 118C 06 14       ld      b, 14h
 118E 70          ld      (hl), b
 118F 23          inc     hl
 1190 DD 34 00        inc     (ix+0)
-1193 C6 30       add     a, 30h ; '0'
+1193 C6 30       add     a, '0'
 1195         loc_1195:
 1195 77          ld      (hl), a
 1196 23          inc     hl
-1197 22 20 E3        ld      (unk_E320), hl
+1197 22 20 E3        ld      (word_E320), hl         ; XXX some sort of cursor pointer
 119A C9          ret
 119A         ; End of function sub_117A
 119B         ; =============== S U B R O U T I N E =======================================
+119B         ; XXX legerdemain
 119B         sub_119B:
-119B E1          pop     hl
-119C 22 80 E3        ld      (unk_E380), hl
+119B E1          pop     hl              ; there goes the return address!
+119C 22 80 E3        ld      (word_E380), hl         ; XXX a point to which to return later
 119F 01 00 E8        ld      bc, unk_E800
 11A2 ED 43 F2 E3     ld      (unk_E3F2), bc
 11A6 B7          or      a
-11A7 2A 20 E3        ld      hl, (unk_E320)
+11A7 2A 20 E3        ld      hl, (word_E320)         ; XXX some sort of cursor pointer
 11AA ED 42       sbc     hl, bc
 11AC 28 29       jr      z, loc_11D7
 11AE 22 F4 E3        ld      (unk_E3F4), hl
-11B1 21 F0 E3        ld      hl, unk_E3F0
+11B1 21 F0 E3        ld      hl, unk_E3F0        ; XXX dynamic legerdemain script
 11B4         loc_11B4:
-11B4 3E 5E       ld      a, 5Eh
+11B4 3E 5E       ld      a, 5Eh          ; vmop5e_4724
 11B6 16 00       ld      d, 0
-11B8 1E 02       ld      e, 2
-11BA CD 8C 41        call    sub_418C            ; XXX dispatch 4002 indexed by A
+11B8 1E 02       ld      e, 2            ; XXX 2? 512?
+11BA CD 8C 41        call    sub_418C            ; XXX like rst8 but with pre-loaded HL and DE params and no IX
 11BD         loc_11BD:
-11BD CD D2 0D        call    sub_DD2             ; XXX witchcraft; stow return address in main loop task slot 02 and return to caller's caller (there is more magicky than even this)
+11BD CD D2 0D        call    sub_DD2             ; XXX setup following as main task slot 2 and return to caller's caller
+11BD         ; End of function sub_119B
+11C0         ; =============== S U B R O U T I N E =======================================
+11C0         ; XXX a main task slot 2 task
+11C0         sub_11C0:
 11C0 3A F0 C1        ld      a, (byte_C1F0)      ; XXX a counter related to unk_ C200
 11C3 B7          or      a
 11C4 20 F7       jr      nz, loc_11BD
 11C6 21 00 E8        ld      hl, unk_E800
-11C9 22 20 E3        ld      (unk_E320), hl
+11C9 22 20 E3        ld      (word_E320), hl         ; XXX some sort of cursor pointer
 11CC 00          nop                 ; wut?
 11CD 00          nop
 11CE 3A 82 E3        ld      a, (byte_E382)
@@ -2761,20 +2783,21 @@
 11D2 28 03       jr      z, loc_11D7
 11D4 CD D7 0D        call    sub_DD7
 11D7         loc_11D7:
-11D7 2A 80 E3        ld      hl, (unk_E380)
+11D7 2A 80 E3        ld      hl, (word_E380)         ; XXX a point to which to return later
 11DA E9          jp      (hl)
-11DA         ; End of function sub_119B
+11DA         ; End of function sub_11C0
 11DB         ; =============== S U B R O U T I N E =======================================
+11DB         ; XXX legerdemain; e.g. block at 1598, 154e, 1804, 1868, 18e6, 1968, 1a2a
 11DB         sub_11DB:
 11DB D1          pop     de              ; there goes the return address!
-11DC ED 53 80 E3     ld      (unk_E380), de
+11DC ED 53 80 E3     ld      (word_E380), de         ; XXX a point to which to return later
 11E0 18 D2       jr      loc_11B4
 11E0         ; End of function sub_11DB
 11E2         ; =============== S U B R O U T I N E =======================================
 11E2         ; XXX stow unk_ E800 @ unk_ E320
 11E2         sub_11E2:
 11E2 21 00 E8        ld      hl, unk_E800
-11E5 22 20 E3        ld      (unk_E320), hl
+11E5 22 20 E3        ld      (word_E320), hl         ; XXX some sort of cursor pointer
 11E8 C9          ret
 11E8         ; End of function sub_11E2
 11E9         ; =============== S U B R O U T I N E =======================================
@@ -2861,7 +2884,7 @@
 124D CB 10       rl      b
 124F 3D          dec     a
 1250 20 F9       jr      nz, loc_124B
-1252 21 00 E6        ld      hl, 0E600h
+1252 21 00 E6        ld      hl, byte_E600       ; XXX used at least by sub_121A for screen rendering; 32x16
 1255 19          add     hl, de
 1256 09          add     hl, bc
 1257 7E          ld      a, (hl)
@@ -3154,9 +3177,10 @@
 13E3 C9          ret
 13E3         ; End of function sub_13CF
 13E4         ; =============== S U B R O U T I N E =======================================
+13E4         ; XXX legerdemain
 13E4         sub_13E4:
 13E4 E1          pop     hl
-13E5 22 20 E2        ld      (unk_E220), hl
+13E5 22 20 E2        ld      (word_E220), hl
 13E8 3A 00 E1        ld      a, (unk_E100)
 13EB B7          or      a
 13EC 28 1B       jr      z, loc_1409
@@ -3175,7 +3199,7 @@
 1406         loc_1406:
 1406 CD 23 41        call    impl_rst10_4123         ; run VM program
 1409         loc_1409:
-1409 2A 20 E2        ld      hl, (unk_E220)
+1409 2A 20 E2        ld      hl, (word_E220)
 140C E9          jp      (hl)
 140C         ; End of function sub_13E4
 140D 63      byte_140D:db 63h            ; ...
@@ -3262,12 +3286,11 @@
 1541 54 49 4D 45+    .ascii 'TIME :   \n'
 1541 20 3A 20 20+    .ascii '  \v'
 154E 00      unk_154E:db    0            ; ...
+154E                             ; legerdemain script
 154F 00          db    0
-1550 54          db  54h ; T
-1551 15          db  15h
-1552 44          db  44h ; D
-1553 00          db    0
-1554 32          db  32h ; 2
+1550 54 15       dw unk_1554
+1552 44 00       dw 68
+1554 32      unk_1554:db  32h ; 2            ; ...
 1555 01          db    1
 1556 00          db    0
 1557 01          db    1
@@ -3336,12 +3359,11 @@
 1596 00          db    0
 1597 01          db    1
 1598 00      unk_1598:db    0            ; ...
+1598                             ; legerdemain script
 1599 00          db    0
-159A 9E          db  9Eh ; û
-159B 15          db  15h
-159C 2D          db  2Dh ; -
-159D 01          db    1
-159E 33          db  33h ; 3
+159A 9E 15       dw unk_159E
+159C 2D 01       dw 301
+159E 33      unk_159E:db  33h ; 3            ; ...
 159F 01          db    1
 15A0 01          db    1
 15A1 01          db    1
@@ -3751,13 +3773,12 @@
 17E8 06 20 20 20+    .ascii '\x06     \n'
 17E8 20 20 0A 20+    .ascii '  \v          \n'
 17E8 20 0B 20 20+    .ascii '  \v    '
-1804 00          db    0
+1804 00      unk_1804:db    0            ; ...
+1804                             ; legerdemain script
 1805 00          db    0
-1806 0A          db  0Ah
-1807 18          db  18h
-1808 5E          db  5Eh ; ^
-1809 00          db    0
-180A 34          db  34h ; 4
+1806 0A 18       dw unk_180A
+1808 5E 00       dw 94
+180A 34      unk_180A:db  34h ; 4            ; ...
 180B 01          db    1
 180C 0D          db  0Dh
 180D 32          db  32h ; 2
@@ -3852,12 +3873,11 @@
 1866 00          db    0
 1867 01          db    1
 1868 00      unk_1868:db    0            ; ...
+1868                             ; legerdemain script
 1869 00          db    0
-186A 6E          db  6Eh ; n
-186B 18          db  18h
-186C 78          db  78h ; x
-186D 00          db    0
-186E 32          db  32h ; 2
+186A 6E 18       dw unk_186E
+186C 78 00       dw 120
+186E 32      unk_186E:db  32h ; 2            ; ...
 186F 01          db    1
 1870 00          db    0
 1871 01          db    1
@@ -3978,12 +3998,11 @@
 18E4 00          db    0
 18E5 01          db    1
 18E6 00      unk_18E6:db    0            ; ...
+18E6                             ; legerdemain script
 18E7 00          db    0
-18E8 EC          db 0ECh ; Ï
-18E9 18          db  18h
-18EA 5D          db  5Dh ; ]
-18EB 00          db    0
-18EC 32          db  32h ; 2
+18E8 EC 18       dw unk_18EC
+18EA 5D 00       dw 93
+18EC 32      unk_18EC:db  32h ; 2            ; ...
 18ED 01          db    1
 18EE 00          db    0
 18EF 01          db    1
@@ -4108,12 +4127,11 @@
 1966 0A      byte_1966:db 0Ah            ; ...
 1967 07      byte_1967:db 7              ; ...
 1968 00      unk_1968:db    0            ; ...
+1968                             ; legerdemain script
 1969 00          db    0
-196A 6E          db  6Eh ; n
-196B 19          db  19h
-196C 23          db  23h ; #
-196D 00          db    0
-196E 34          db  34h ; 4
+196A 6E 19       dw unk_196E
+196C 23 00       dw 35
+196E 34      unk_196E:db  34h ; 4            ; ...
 196F 01          db    1
 1970 0D          db  0Dh
 1971 39          db  39h ; 9
@@ -4197,19 +4215,16 @@
 1A20 09          db 9
 1A21 C0 B2 CF B0+    .ascii '¿≤œ∞•∏ÿ±∞'
 1A2A 00      byte_1A2A:db 0              ; ...
+1A2A                             ; legerdemain script
 1A2B 00          db 0
-1A2C 30          db 30h
-1A2D 1A          db 1Ah
-1A2E 02          db 2
-1A2F 00          db 0
-1A30 47          db 47h
+1A2C 30 1A       dw byte_1A30
+1A2E 02 00       dw 2
+1A30 47      byte_1A30:db 47h            ; ...
 1A31 00          db 0
 1A32 00          db 0
 1A33 00          db 0
-1A34 38          db 38h
-1A35 1A          db 1Ah
-1A36 10          db 10h
-1A37 00          db 0
+1A34 38 1A       dw byte_1A38
+1A36 10 00       dw 16
 1A38 32      byte_1A38:db 32h            ; ...
 1A39 02          db 2
 1A3A 00          db 0
@@ -4237,7 +4252,7 @@
 1A4A C5          push    bc
 1A4B D5          push    de
 1A4C E5          push    hl
-1A4D CD 5F 1A        call    sub_1A5F            ; XXX figure out lowest reset bit in port 68h
+1A4D CD 5F 1A        call    sub_1A5F            ; XXX check front panel function keys
 1A50 CD F9 1F        call    nullsub_1           ; whee! nothing
 1A53 CD 3C 22        call    sub_223C
 1A56 CD 02 37        call    sub_3702            ; XXX increment byte_C494
@@ -4248,13 +4263,13 @@
 1A5D ED 4D       reti
 1A5D         ; End of function isrCTCb0_1A48
 1A5F         ; =============== S U B R O U T I N E =======================================
-1A5F         ; XXX figure out lowest reset bit in port 68h
+1A5F         ; XXX check front panel function keys
 1A5F         sub_1A5F:
-1A5F 21 C0 C1        ld      hl, byte_C1C0       ; XXX port 68h 'expect' value
+1A5F 21 C0 C1        ld      hl, byte_C1C0       ; XXX last front panel button change value
 1A62 DB 68       in      a, (68h)            ; 8255c-a
 1A64 BE          cp      (hl)
 1A65 20 14       jr      nz, unexpected_1A7B
-1A67 2C          inc     l               ; get to a down counter we init'd to 4
+1A67 2C          inc     l               ; debounce counter we init'd to 4
 1A68 35          dec     (hl)
 1A69 C0          ret     nz              ; leave if we haven't hit zero
 1A6A 2C          inc     l               ; get to a expect value when we were in holdoff
@@ -4269,7 +4284,7 @@
 1A75 C9          ret                 ; nothing reset; leave
 1A76         resetfound_1A76:            ; ...
 1A76 78          ld      a, b            ; remember the (reverse) bit number 8-1 that we found
-1A77 32 8E C0        ld      (word_C08E), a      ; XXX relates to first reset bit number found in 68h; 0 = none found
+1A77 32 8E C0        ld      (byte_C08E), a      ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 1A7A C9          ret
 1A7B         unexpected_1A7B:            ; ...
 1A7B 77          ld      (hl), a             ; change the 'expect' value for next time
@@ -4390,20 +4405,20 @@
 1B0E ED 4D       reti
 1B0E         ; End of function isrCTCb2_1AC8
 1B10 00 00 00 00+    db [ 0F0h ], 0
-1C00 01 05       dw 501h                 ; XXX ROM version 5-1
+1C00 01 05       dw 501h                 ; XXX this keeps showing up
 1C02         ; =============== S U B R O U T I N E =======================================
 1C02         sub_1C02:
-1C02 ED 4B 8E C0     ld      bc, (word_C08E)         ; XXX relates to first reset bit number found in 68h; 0 = none found
+1C02 ED 4B 8E C0     ld      bc, (byte_C08E)         ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 1C06 AF          xor     a
 1C07 B9          cp      c
 1C08 28 06       jr      z, loc_1C10
-1C0A 32 8E C0        ld      (word_C08E), a      ; XXX relates to first reset bit number found in 68h; 0 = none found
+1C0A 32 8E C0        ld      (byte_C08E), a      ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 1C0D 79          ld      a, c
 1C0E 18 07       jr      loc_1C17
 1C10         loc_1C10:
 1C10 B8          cp      b
 1C11 28 2C       jr      z, nullsub_24
-1C13 32 8F C0        ld      (word_C08E+1), a        ; XXX relates to first reset bit number found in 68h; 0 = none found
+1C13 32 8F C0        ld      (byte_C08F), a      ; XXX a state that affect front panel button handling
 1C16 78          ld      a, b
 1C17         loc_1C17:
 1C17 32 42 C3        ld      (byte_C342), a
@@ -8611,7 +8626,8 @@
 36FA CD 36       dw sub_36CD
 36FC D8 36       dw sub_36D8
 36FE B7 36       dw nullsub_9
-3700 01 05       dw sub_501
+3700 01          db    1
+3701 05          db    5
 3702         ; =============== S U B R O U T I N E =======================================
 3702         ; XXX increment byte_C494
 3702         sub_3702:
@@ -9923,7 +9939,7 @@
 3EA0         ; =============== S U B R O U T I N E =======================================
 3EA0         ; XXX MCU state 5 (A = PIO B data)
 3EA0         sub_3EA0:
-3EA0 32 8F C0        ld      (word_C08E+1), a        ; XXX relates to first reset bit number found in 68h; 0 = none found
+3EA0 32 8F C0        ld      (byte_C08F), a      ; XXX a state that affect front panel button handling
 3EA3 C9          ret
 3EA3         ; End of function sub_3EA0
 3EA4         ; =============== S U B R O U T I N E =======================================
@@ -10101,7 +10117,7 @@
 40B8 7F 48       dw vmop5b_487F          ; XXX vmop 5b(4): setup unk_ C130 entry; param1=source 3-bytes (and rest), param2.h=index, param2.l=???
 40BA AD 48       dw vmop5c_48AD          ; vmop 5c(4):
 40BC ED 48       dw vmop5d_48ED          ; vmop 5d(4):
-40BE 24 47       dw vmop5e_4724          ; vmop 5e(4):
+40BE 24 47       dw vmop5e_4724          ; vmop 5e(4): XXX force dispatch from loc_11B4; legerdemain script in HL, D=0,E=2
 40C0 DD 49       dw vmop5f_49DD          ; vmop 5f(4):
 40C2 53 4A       dw vmop60_4A53          ; vmop 60(4):
 40C4 CC 4A       dw vmop61_4ACC          ; vmop 61(4):
@@ -10222,7 +10238,7 @@
 418B C9          ret                 ; really a jump to the dispatched function
 418B         ; End of function impl_rst8_4167
 418C         ; =============== S U B R O U T I N E =======================================
-418C         ; XXX dispatch 4002 indexed by A
+418C         ; XXX like rst8 but with pre-loaded HL and DE params and no IX
 418C         sub_418C:
 418C E5          push    hl              ; save the parameter; will do presto-swappo of stack later
 418D 21 02 40        ld      hl, dispatch_4002
@@ -10441,7 +10457,7 @@
 4251 EB          ex      de, hl
 4252 B7          or      a
 4253 ED 42       sbc     hl, bc
-4255 EB          ex      de, hl          ; *(uint16be_t*)param1) - *(uint16be_t*)param2)
+4255 EB          ex      de, hl          ; DE = *(uint16be_t*)param1) - *(uint16be_t*)param2)
 4256 E1          pop     hl
 4257 72          ld      (hl), d
 4258 23          inc     hl
@@ -11536,7 +11552,7 @@
 4723 C9          ret
 4723         ; End of function vmop4b_471D
 4724         ; =============== S U B R O U T I N E =======================================
-4724         ; vmop 5e(4):
+4724         ; vmop 5e(4): XXX force dispatch from loc_11B4; legerdemain script in HL, D=0,E=2
 4724         vmop5e_4724: 
 4724 C5          push    bc
 4725 E5          push    hl
@@ -11562,8 +11578,8 @@
 4744 06 00       ld      b, 0
 4746 4F          ld      c, a
 4747 09          add     hl, bc          ; HL = structure address
-4748 7B          ld      a, e
-4749 C1          pop     bc              ; BC now has param1
+4748 7B          ld      a, e            ; param2.l
+4749 C1          pop     bc              ; BC now has param1 (legerdemain script address)
 474A FE 01       cp      1
 474C 28 1A       jr      z, loc_4768
 474E FE 02       cp      2
@@ -12737,7 +12753,7 @@
 4D4E         ; End of function sub_4D40
 4D4F 00 00 00 00+    db [ 0B1h ], 0
 4E00         ; =============== S U B R O U T I N E =======================================
-4E00         ; XXX perhaps dead code
+4E00         ; XXX enter mode 2 related?  CAI study
 4E00         sub_4E00:
 4E00 21 70 C0        ld      hl, byte_C070       ; clear 128 bytes here
 4E03 06 80       ld      b, 128
@@ -12745,8 +12761,8 @@
 4E05 36 00       ld      (hl), 0             ; clear
 4E07 23          inc     hl
 4E08 10 FB       djnz    loop_4E05
-4E0A 21 B0 80        ld      hl, byte_80B0       ; XXX a bitfield; also goes out 8255b-b
-4E0D CB F6       set     6, (hl)
+4E0A 21 B0 80        ld      hl, byte_80B0       ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
+4E0D CB F6       set     6, (hl)             ; indicate 'mode 2' led
 4E0F 0E 65       ld      c, 65h
 4E11 ED A3       outi                ; 8255b-b (XXX odd choice of outi since we're not repeating)
 4E13 2A 24 C0        ld      hl, (word_C024)         ; isrCTCb1 task 02; 2DC
@@ -13453,7 +13469,7 @@
 5168         ; =============== S U B R O U T I N E =======================================
 5168         sub_5168:
 5168 11 20 C8        ld      de, 0C820h
-516B 3A 03 81        ld      a, (byte_8103)      ; XXX ??? previous motor 'phase'
+516B 3A 03 81        ld      a, (byte_8103)      ; XXX ??? previous learning progress
 516E A7          and     a
 516F C8          ret     z
 5170 3D          dec     a
@@ -13555,7 +13571,7 @@
 5206         ; =============== S U B R O U T I N E =======================================
 5206         sub_5206:
 5206 CD 5A 52        call    sub_525A
-5209 21 8F C0        ld      hl,  word_C08E+1        ; XXX relates to first reset bit number found in 68h; 0 = none found
+5209 21 8F C0        ld      hl, byte_C08F       ; XXX a state that affect front panel button handling
 520C 7E          ld      a, (hl)
 520D A7          and     a
 520E C8          ret     z
@@ -13615,7 +13631,7 @@
 5257         ; End of function sub_5206
 525A         ; =============== S U B R O U T I N E =======================================
 525A         sub_525A:
-525A 21 8E C0        ld      hl, word_C08E       ; XXX relates to first reset bit number found in 68h; 0 = none found
+525A 21 8E C0        ld      hl, byte_C08E       ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 525D 7E          ld      a, (hl)
 525E A7          and     a
 525F C8          ret     z
@@ -14226,7 +14242,7 @@
 55BD C8          ret     z
 55BE 3E 01       ld      a, 1
 55C0 32 A0 80        ld      (unk_80A0), a       ; XXX ...; [0] reset at midnight; non-zero bypasses some 8255c-c
-55C3 21 B1 80        ld      hl, unk_80B1        ; XXX a bitfield; also goes out 8255c-c
+55C3 21 B1 80        ld      hl, byte_80B1       ; XXX a bitfield; also goes out 8255c-c
 55C6 CB B6       res     6, (hl)
 55C8 0E 6A       ld      c, 6Ah
 55CA ED A3       outi                ; 8255c?
@@ -14400,7 +14416,7 @@
 56C3         ; End of function sub_56B2
 56C6         ; =============== S U B R O U T I N E =======================================
 56C6         sub_56C6:
-56C6 21 8E C0        ld      hl, word_C08E       ; XXX relates to first reset bit number found in 68h; 0 = none found
+56C6 21 8E C0        ld      hl, byte_C08E       ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 56C9 7E          ld      a, (hl)
 56CA A7          and     a
 56CB C8          ret     z
@@ -14919,7 +14935,7 @@
 58FE         ; =============== S U B R O U T I N E =======================================
 58FE         sub_58FE:
 58FE 21 00 00        ld      hl, 0
-5901 22 8E C0        ld      (word_C08E), hl         ; XXX relates to first reset bit number found in 68h; 0 = none found
+5901 22 8E C0        ld      (byte_C08E), hl         ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 5904 C9          ret
 5904         ; End of function sub_58FE
 5905         ; =============== S U B R O U T I N E =======================================
@@ -15816,41 +15832,41 @@
 5D08 18 2F       jr      loc_5D39
 5D0A         loc_5D0A:
 5D0A 32 01 81        ld      (byte_8101), a
-5D0D 11 06 81        ld      de, unk_8106
+5D0D 11 06 81        ld      de, word_8106
 5D10 01 0A 00        ld      bc, 10
 5D13 ED B0       ldir
 5D15 21 0C 81        ld      hl, word_810C
 5D18 7E          ld      a, (hl)
 5D19 23          inc     hl
 5D1A B6          or      (hl)
-5D1B 32 02 81        ld      (byte_8102), a      ; XXX ??? this motor 'phase'
+5D1B 32 02 81        ld      (byte_8102), a      ; XXX ??? this learning progress
 5D1E 28 19       jr      z, loc_5D39
-5D20 21 66 5D        ld      hl, byte_5D66       ; XXX fed to rst 10
+5D20 21 66 5D        ld      hl, byte_5D66       ; XXX rst 10; seems learning progress related
 5D23 CD 23 41        call    impl_rst10_4123         ; run VM program
 5D26 CB 01       rlc     c
 5D28 38 03       jr      c, loc_5D2D
-5D2A 21 85 5D        ld      hl, byte_5D85       ; XXX fed to rst 10
+5D2A 21 85 5D        ld      hl, byte_5D85       ; XXX (810E) -= (8108) be
 5D2D         loc_5D2D:
 5D2D CD 23 41        call    impl_rst10_4123         ; run VM program
 5D30 CB 01       rlc     c
 5D32 38 05       jr      c, loc_5D39
-5D34 21 02 81        ld      hl, byte_8102       ; XXX ??? this motor 'phase'
+5D34 21 02 81        ld      hl, byte_8102       ; XXX ??? this learning progress
 5D37 36 01       ld      (hl), 1
 5D39         loc_5D39:
-5D39 CD 44 5D        call    sub_5D44            ; XXX advance motor 'phase'
-5D3C 0E 65       ld      c, 65h ; 'e'
-5D3E ED A3       outi
+5D39 CD 44 5D        call    sub_5D44            ; XXX ??? advance learning progress; (seems odd that ahead wraps to behind, though)
+5D3C 0E 65       ld      c, 65h          ; front panel leds port
+5D3E ED A3       outi                ; XXX seems an odd choice since we're not looping; maybe it's to synthesize 'out (c), (hl)'
 5D40 3E 01       ld      a, 1            ; rst 18 fxn 1; update clock vars and do midnight tasks
 5D42 DF          rst     18h             ; handy functions 0-4 as per A
 5D43 C9          ret
 5D43         ; End of function sub_5CD5
 5D44         ; =============== S U B R O U T I N E =======================================
-5D44         ; XXX advance motor 'phase'
+5D44         ; XXX ??? advance learning progress; (seems odd that ahead wraps to behind, though)
 5D44         sub_5D44:
-5D44 3A 02 81        ld      a, (byte_8102)      ; XXX ??? this motor 'phase'
-5D47 32 03 81        ld      (byte_8103), a      ; XXX ??? previous motor 'phase'
-5D4A 21 B0 80        ld      hl, byte_80B0       ; XXX a bitfield; also goes out 8255b-b
-5D4D CB 96       res     2, (hl)             ; clear 'phases' in RAM
+5D44 3A 02 81        ld      a, (byte_8102)      ; XXX ??? this learning progress
+5D47 32 03 81        ld      (byte_8103), a      ; XXX ??? previous learning progress
+5D4A 21 B0 80        ld      hl, byte_80B0       ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
+5D4D CB 96       res     2, (hl)             ; clear learning progress indicators in RAM
 5D4F CB 8E       res     1, (hl)
 5D51 CB 86       res     0, (hl)
 5D53 3D          dec     a
@@ -15871,33 +15887,33 @@
 5D65 C9          ret
 5D65         ; End of function sub_5D44
 5D66 04      byte_5D66:db 4              ; ...
-5D66                             ; vmop04_41B5
+5D66                             ; vmop04_41B5 *(uint8_t*)param1 = param2.l
 5D67 81 02       dw 281h                 ; 8102
 5D69 00 03       dw 300h                 ; 0003
-5D6B 01          db 1                ; vmop01_41A7
+5D6B 01          db 1                ; vmop01_41A7 *(uint16be_t*)param1 = *(uint16be_t*)param2
 5D6C 81 08       dw 881h                 ; 8108
 5D6E 81 0A       dw 0A81h                ; 810a
-5D70 0F          db 0Fh              ; vmop0f_4247
+5D70 0F          db 0Fh              ; vmop0f_4247 *(uint16be_t*)param1) -= *(uint16be_t*)param2)
 5D71 81 08       dw 881h                 ; 8108
 5D73 81 06       dw 681h                 ; 8106
 5D75 00          db 0                ; vmop00_end_419E
-5D76 04          db    4
+5D76 04          db 4                ; vmop04_41B5 *(uint8_t*)param1 = param2.l
 5D77 81          db  81h ; Å
 5D78 02          db    2
 5D79 00          db    0
 5D7A 02          db    2
-5D7B 0F          db  0Fh
+5D7B 0F          db 0Fh              ; vmop0f_4247 *(uint16be_t*)param1) -= *(uint16be_t*)param2)
 5D7C 81          db  81h ; Å
 5D7D 06          db    6
 5D7E 81          db  81h ; Å
 5D7F 0A          db  0Ah
-5D80 01          db    1
+5D80 01          db 1                ; vmop01_41A7 *(uint16be_t*)param1 = *(uint16be_t*)param2
 5D81 81          db  81h ; Å
 5D82 08          db    8
 5D83 81          db  81h ; Å
 5D84 06          db    6
 5D85 0F      byte_5D85:db 0Fh            ; ...
-5D85                             ; vmop0f_4247
+5D85                             ; vmop0f_4247 *(uint16be_t*)param1) -= *(uint16be_t*)param2)
 5D86 81 0E       dw 0E81h                ; 810e
 5D88 81 08       dw 881h                 ; 8108
 5D8A 00          db 0                ; vmop00_end_419E
@@ -16151,7 +16167,7 @@
 5ECF         ; End of function rst18fxn04_5E78
 5ED0 00 00 00 00+    db [ 130h ], 0
 6000         ; =============== S U B R O U T I N E =======================================
-6000         ; XXX mode change? enter serial?
+6000         ; XXX enter mode 5? Information
 6000         sub_6000:
 6000 2A 00 C0        ld      hl, (word_C000)         ; isrCTCa0 - serin
 6003 22 00 C9        ld      (word_C900), hl         ; backup isrCTCa0 when switching to serial
@@ -16163,8 +16179,8 @@
 6015 22 24 C0        ld      (word_C024), hl         ; isrCTCb1 task 02; 2DC
 6018 21 FB 62        ld      hl, sub_62FB        ; XXX alt main task 01; used during serial
 601B 22 42 C0        ld      (word_C042), hl         ; XXX main() task 01; 0FFFFh
-601E 21 B0 80        ld      hl, byte_80B0       ; XXX a bitfield; also goes out 8255b-b
-6021 CB DE       set     3, (hl)
+601E 21 B0 80        ld      hl, byte_80B0       ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
+6021 CB DE       set     3, (hl)             ; indicate 'mode 5' led
 6023 AF          xor     a               ; rst 18 fxn 0; inhibit isrCTCb2 task 01
 6024 DF          rst     18h             ; handy functions 0-4 as per A
 6025 C9          ret
@@ -16172,7 +16188,7 @@
 6026         ; START OF FUNCTION CHUNK FOR sub_642A
 6026         loc_6026:
 6026 CD EE 60        call    sub_60EE            ; XXX exit serial tail
-6029 21 B0 80        ld      hl, byte_80B0       ; XXX a bitfield; also goes out 8255b-b
+6029 21 B0 80        ld      hl, byte_80B0       ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
 602C CB 9E       res     3, (hl)
 602E 2A 00 C9        ld      hl, (word_C900)         ; backup isrCTCa0 when switching to serial
 6031 22 00 C0        ld      (word_C000), hl         ; isrCTCa0 - serin
@@ -16649,8 +16665,8 @@
 6301 01 09 00        ld      bc, 9
 6304 ED B0       ldir
 6306 AF          xor     a
-6307 32 8F C0        ld      (word_C08E+1), a        ; XXX relates to first reset bit number found in 68h; 0 = none found
-630A 32 8E C0        ld      (word_C08E), a      ; XXX relates to first reset bit number found in 68h; 0 = none found
+6307 32 8F C0        ld      (byte_C08F), a      ; XXX a state that affect front panel button handling
+630A 32 8E C0        ld      (byte_C08E), a      ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 630D 32 25 C9        ld      (byte_C925), a      ; XXX serial speed; 0 = XXX, 1 = YYY
 6310 32 07 C9        ld      (byte_C907), a      ; XXX a flag that byte_C908 reached zero
 6313 32 26 C9        ld      (byte_C926), a
@@ -17086,13 +17102,13 @@
 65E3         ; =============== S U B R O U T I N E =======================================
 65E3         sub_65E3:
 65E3 E5          push    hl
-65E4 21 8E C0        ld      hl, word_C08E       ; XXX relates to first reset bit number found in 68h; 0 = none found
+65E4 21 8E C0        ld      hl, byte_C08E       ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
 65E7 18 04       jr      loc_65ED
 65E7         ; End of function sub_65E3
 65E9         ; =============== S U B R O U T I N E =======================================
 65E9         sub_65E9:
 65E9 E5          push    hl
-65EA 21 8F C0        ld      hl,  word_C08E+1        ; XXX relates to first reset bit number found in 68h; 0 = none found
+65EA 21 8F C0        ld      hl, byte_C08F       ; XXX a state that affect front panel button handling
 65ED         loc_65ED:
 65ED F3          di
 65EE 7E          ld      a, (hl)
@@ -19615,7 +19631,8 @@
 8072                             ; alarm??? sec / time??? hour
 8073 ??          ds 1                ; time; hour
 8074 ??      byte_8074:ds 1              ; time; min
-8075 ??      byte_8075:ds 1              ; time; min
+8075 ??      byte_8075:ds 1              ; ...
+8075                             ; time; min
 8076 ??      byte_8076:ds 1              ; time; sec
 8077 ??      byte_8077:ds 1              ; ...
 8077                             ; time; sec
@@ -19677,8 +19694,8 @@
 80AE ??          ds 1
 80AF ??          ds 1
 80B0 ??      byte_80B0:ds 1              ; ...
-80B0                             ; XXX a bitfield; also goes out 8255b-b
-80B1 ??      unk_80B1:ds 1
+80B0                             ; XXX leds; also goes out 8255b-b; b7=mode1...b3-mode5; lower 3 might be progress indication
+80B1 ??      byte_80B1:ds 1              ; ...
 80B1                             ; XXX a bitfield; also goes out 8255c-c
 80B2 ??          ds 1
 80B3 ??          ds 1
@@ -19761,19 +19778,16 @@
 8100 ??      unk_8100:ds 1
 8101 ??      byte_8101:ds 1              ; ...
 8102 ??      byte_8102:ds 1              ; ...
-8102                             ; XXX ??? this motor 'phase'
+8102                             ; XXX ??? this learning progress
 8103 ??      byte_8103:ds 1              ; ...
-8103                             ; XXX ??? previous motor 'phase'
+8103                             ; XXX ??? previous learning progress
 8104 ?? ??   word_8104:ds 2              ; ...
 8104                             ; XXX big-endian
-8106 ??      unk_8106:ds 1
-8107 ??          ds 1
+8106 ?? ??   word_8106:ds 2              ; ...
 8108 ?? ??   word_8108:ds 2              ; ...
-810A ??          ds 1
-810B ??          ds 1
+810A ?? ??   word_810A:ds 2
 810C ?? ??   word_810C:ds 2              ; ...
-810E ??          ds 1
-810F ??          ds 1
+810E ?? ??   word_810E:ds 2
 8110 ??          ds 1
 8111 ??          ds 1
 8112 ??          ds 1
@@ -23674,7 +23688,7 @@ C065 ??          ds 1
 C066 ??          ds 1
 C067 ??          ds 1
 C068 ??      byte_C068:ds 1              ; ...
-C068                             ; XXX flag causing warm boot (or maybe sleep) in main task 00
+C068                             ; XXX flag causing sleep/powerdown in main task 00
 C069 ??      byte_C069:ds 1              ; ...
 C069                             ; XXX a watchdog timer; initted to 5 on 69h b6 set (system ready)
 C06A ??          ds 1
@@ -23712,8 +23726,10 @@ C089 ?? ??   word_C089:ds 2              ; ...
 C08B ??      byte_C08B:ds 1              ; ...
 C08C ??      byte_C08C:ds 1              ; ...
 C08D ??      byte_C08D:ds 1              ; ...
-C08E ?? ??   word_C08E:ds 2              ; ...
-C08E                             ; XXX relates to first reset bit number found in 68h; 0 = none found
+C08E ??      byte_C08E:ds 1              ; ...
+C08E                             ; XXX relates to front panel function keys 1-8; 8255c-a; 0 = none; reverse bit number (b0 = 8 ... b7 = 1)
+C08F ??      byte_C08F:ds 1              ; ...
+C08F                             ; XXX a state that affect front panel button handling
 C090 ?? ??   word_C090:ds 2              ; ...
 C092 ??      byte_C092:ds 1              ; ...
 C093 ??          ds 1
@@ -24014,8 +24030,8 @@ C1BD ??          ds 1
 C1BE ??          ds 1
 C1BF ??          ds 1
 C1C0 ??      byte_C1C0:ds 1              ; ...
-C1C0                             ; XXX port 68h 'expect' value
-C1C1 ??          ds 1                ; XXX a down counter when expectation is met; init'd to 4
+C1C0                             ; XXX last front panel button change value
+C1C1 ??          ds 1                ; XXX a down counter for front panel button debounce
 C1C2 ??          ds 1                ; XXX old 'expect' value during holdoff
 C1C3 ??          ds 1
 C1C4 ??          ds 1
@@ -32003,7 +32019,7 @@ E0FD ??          ds 1
 E0FE ??          ds 1
 E0FF ??          ds 1
 E100 ??      unk_E100:ds 1
-E101 ??      unk_E101:ds 1
+E101 ??      byte_E101:ds 1              ; ...
 E102 ??      unk_E102:ds 1
 E103 ??          ds 1
 E104 ??          ds 1
@@ -32019,6 +32035,7 @@ E10D ??          ds 1
 E10E ??          ds 1
 E10F ??      byte_E10F:ds 1              ; ...
 E110 ??      byte_E110:ds 1              ; ...
+E110                             ; XXX mode selector 1-6
 E111 ??          ds 1
 E112 ??          ds 1
 E113 ??          ds 1
@@ -32049,7 +32066,7 @@ E12A ??      unk_E12A:ds 1
 E12B ??      unk_E12B:ds 1
 E12C ??          ds 1
 E12D ??      unk_E12D:ds 1
-E12E ??      unk_E12E:ds 1
+E12E ??      byte_E12E:ds 1              ; ...
 E12F ??      byte_E12F:ds 1              ; ...
 E12F                             ; XXX cassette (mode 4) functions
 E130 ??          ds 1
@@ -32261,8 +32278,7 @@ E1FC ??          ds 1
 E1FD ??          ds 1
 E1FE ??          ds 1
 E1FF ??          ds 1
-E200 ??      unk_E200:ds 1
-E201 ??          ds 1
+E200 ?? ??   word_E200:ds 2              ; ...
 E202 ??      unk_E202:ds 1
 E203 ??          ds 1
 E204 ??          ds 1
@@ -32293,8 +32309,7 @@ E21C ??          ds 1
 E21D ??          ds 1
 E21E ??          ds 1
 E21F ??          ds 1
-E220 ??      unk_E220:ds 1
-E221 ??          ds 1
+E220 ?? ??   word_E220:ds 2
 E222 ??          ds 1
 E223 ??          ds 1
 E224 ??          ds 1
@@ -32549,8 +32564,8 @@ E31C ??          ds 1
 E31D ??          ds 1
 E31E ??          ds 1
 E31F ??          ds 1
-E320 ??      unk_E320:ds 1
-E321 ??          ds 1
+E320 ?? ??   word_E320:ds 2              ; ...
+E320                             ; XXX some sort of cursor pointer
 E322 ??          ds 1
 E323 ??          ds 1
 E324 ??          ds 1
@@ -32645,8 +32660,8 @@ E37C ??          ds 1
 E37D ??          ds 1
 E37E ??          ds 1
 E37F ??          ds 1
-E380 ??      unk_E380:ds 1
-E381 ??          ds 1
+E380 ?? ??   word_E380:ds 2              ; ...
+E380                             ; XXX a point to which to return later
 E382 ??      byte_E382:ds 1              ; ...
 E383 ??          ds 1                ; XXX is it used?
 E384 ??          ds 1
@@ -32758,6 +32773,7 @@ E3ED ??          ds 1
 E3EE ??          ds 1
 E3EF ??          ds 1
 E3F0 ??      unk_E3F0:ds 1
+E3F0                             ; XXX dynamic legerdemain script
 E3F1 ??          ds 1
 E3F2 ??      unk_E3F2:ds 1
 E3F3 ??          ds 1
